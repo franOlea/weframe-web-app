@@ -84,6 +84,8 @@ define('components/user-list',['exports', 'aurelia-framework', '../services/user
 
             this.userService = userService;
             this.users = [];
+            this.error = {};
+            this.isWorking = false;
         }
 
         UserList.prototype.created = function created() {
@@ -93,11 +95,14 @@ define('components/user-list',['exports', 'aurelia-framework', '../services/user
         UserList.prototype.updateUserList = function updateUserList(page, size) {
             var _this = this;
 
+            this.isWorking = true;
             this.userService.getUsers(page, size).then(function (userResponse) {
-                return _this.users = JSON.parse(userResponse.response);
+                _this.users = JSON.parse(userResponse.response);
+                _this.isWorking = false;
             }, function (errorResponse) {
                 _this.error.title = 'Ups';
                 _this.error.description = 'Parece que el sistema no response, por favor intenta nuevamente mas tarde.';
+                _this.isWorking = false;
             });
         };
 
@@ -172,5 +177,5 @@ define('services/user-service',['exports', 'aurelia-http-client', '../environmen
     }();
 });
 define('text!app.html', ['module'], function(module) { module.exports = "<template><require from=\"bootstrap/css/bootstrap.css\"></require><require from=\"./components/user-list\"></require><user-list></user-list></template>"; });
-define('text!components/user-list.html', ['module'], function(module) { module.exports = "<template><table class=\"table table-bordered\"><tr><th>ID</th><th>Nombre</th><th>Apellido</th><th>Email</th><th>Rol</th><th>Estado</th></tr><tr repeat.for=\"user of users\"><td>${user.id}</td><td>${user.firstName}</td><td>${user.lastName}</td><td>${user.email}</td><td>${user.role.name}</td><td>${user.state.name}</td></tr></table></template>"; });
+define('text!components/user-list.html', ['module'], function(module) { module.exports = "<template><div class=\"alert alert-danger\" if.bind=\"error.description\"><strong>${error.title}</strong> ${error.description}</div><table class=\"table table-bordered\"><tr><th>ID</th><th>Nombre</th><th>Apellido</th><th>Email</th><th>Rol</th><th>Estado</th></tr><tr repeat.for=\"user of users\"><td>${user.id}</td><td>${user.firstName}</td><td>${user.lastName}</td><td>${user.email}</td><td>${user.role.name}</td><td>${user.state.name}</td></tr></table></template>"; });
 //# sourceMappingURL=app-bundle.js.map

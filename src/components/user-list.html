@@ -1,4 +1,7 @@
 <template>
+    <div class="alert alert-danger" if.bind="error.description">
+        <strong>${error.title}</strong> ${error.description}
+    </div>
     <table class="table table-bordered">
         <tr>
             <th>ID</th>
