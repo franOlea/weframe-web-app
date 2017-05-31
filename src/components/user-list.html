@@ -1,0 +1,20 @@
+<template>
+    <table class="table table-bordered">
+        <tr>
+            <th>ID</th>
+            <th>Nombre</th>
+            <th>Apellido</th>
+            <th>Email</th>
+            <th>Rol</th>
+            <th>Estado</th>
+        </tr>
+        <tr repeat.for="user of users">
+            <td>${user.id}</td>
+            <td>${user.firstName}</td>
+            <td>${user.lastName}</td>
+            <td>${user.email}</td>
+            <td>${user.role.name}</td>
+            <td>${user.state.name}</td>
+        </tr>
+    </table>
+</template>
