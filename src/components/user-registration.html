@@ -1,0 +1,34 @@
+<template>
+    <form role="form" submit.delegate="register()">
+        <div class="form-group">
+            <label for="firstName">Nombre:</label>
+            <input type="text" class="form-control" value.bind="firstName & validate" placeholder="ej: Juan">
+        </div>
+        <div class="form-group">
+            <label for="lastName">Apellido:</label>
+            <input type="text" class="form-control" value.bind="lastName & validate" placeholder="ej: Perez">
+        </div>
+        <div class="form-group">
+            <label for="email">Email:</label>
+            <input type="email" class="form-control" value.bind="email & validate" placeholder="ej: juan.perez@email.com">
+        </div>
+        <div class="form-group">
+            <label for="password">Contraseña:</label>
+            <input type="password" class="form-control" value.bind="password & validate" >
+        </div>
+        <div class="form-group">
+            <div class="alert alert-warning" repeat.for="error of validationController.errors">
+                <!--<strong>${error.title}</strong> ${error.description}-->
+                ${error.message}
+            </div>
+            <div class="alert alert-danger" if.bind="serverError.title">
+                <strong>${serverError.title}</strong> ${serverError.description}
+            </div>
+            <div class="alert alert-success" if.bind="success">
+                <strong>Exito!</strong> El usuario fue registrado correctamente.
+            </div>
+        </div>
+        <button type="submit" class="btn btn-primary" if.bind="!isWorking">Registrar</button>
+        <button type="submit" class="btn btn-primary disabled" if.bind="isWorking"><i class="fa fa-spinner fa-spin"></i> Enviando...</button>
+    </form>
+</template>

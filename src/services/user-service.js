@@ -26,7 +26,7 @@ export class UserService {
                 .send()
     }
 
-    postUser() {
+    postUser(user) {
         return this.restClient.createRequest(environment.webApiUsersPath)
                 .asPost()
                 .withBaseUrl(environment.webApiUrl)

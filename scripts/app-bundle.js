@@ -47,7 +47,7 @@ define('main',['exports', './environment'], function (exports, _environment) {
   }
 
   function configure(aurelia) {
-    aurelia.use.standardConfiguration().feature('resources');
+    aurelia.use.standardConfiguration().feature('resources').plugin('aurelia-validation');
 
     if (_environment2.default.debug) {
       aurelia.use.developmentLogging();
@@ -107,6 +107,87 @@ define('components/user-list',['exports', 'aurelia-framework', '../services/user
         };
 
         return UserList;
+    }()) || _class);
+});
+define('components/user-registration',['exports', 'aurelia-framework', '../services/user-service', 'aurelia-validation'], function (exports, _aureliaFramework, _userService, _aureliaValidation) {
+    'use strict';
+
+    Object.defineProperty(exports, "__esModule", {
+        value: true
+    });
+    exports.UserRegistration = undefined;
+
+    function _classCallCheck(instance, Constructor) {
+        if (!(instance instanceof Constructor)) {
+            throw new TypeError("Cannot call a class as a function");
+        }
+    }
+
+    var _dec, _class;
+
+    var UserRegistration = exports.UserRegistration = (_dec = (0, _aureliaFramework.inject)(_userService.UserService, _aureliaFramework.NewInstance.of(_aureliaValidation.ValidationController)), _dec(_class = function () {
+        function UserRegistration(userService, validationController) {
+            _classCallCheck(this, UserRegistration);
+
+            this.firstName = '';
+            this.lastName = '';
+            this.email = '';
+            this.password = '';
+
+            this.userService = userService;
+            this.validationController = validationController;
+            this.isWorking = false;
+            this.success = false;
+            this.serverError = {};
+        }
+
+        UserRegistration.prototype.created = function created() {
+            this.validationController.validateTrigger = _aureliaValidation.validateTrigger.manual;
+
+            _aureliaValidation.ValidationRules.ensure("firstName").required().withMessage("El nombre no puede estar vacio.").ensure("lastName").required().withMessage("El apellido no puede estar vacio.").ensure("email").email().required().withMessage("El email no es valido, por favor ingrese un email valido.").ensure("password").minLength(8).required().withMessage("La contraseña debe tener al menos 8 caracteres").on(this);
+        };
+
+        UserRegistration.prototype.register = function register() {
+            var _this = this;
+
+            this.success = false;
+            this.isWorking = true;
+
+            var user = {
+                firstName: this.firstName,
+                lastName: this.lastName,
+                email: this.email,
+                password: this.password
+            };
+
+            setTimeout(function () {
+                _this.validationController.validate().then(function (validation) {
+                    if (validation.valid) {
+                        _this.success = true;
+                    }
+                }).then(function () {
+                    return _this.isWorking = false;
+                });
+            }, 1000);
+        };
+
+        UserRegistration.prototype.postUser = function postUser(user) {
+            var _this2 = this;
+
+            this.userService.postUser(user).then(function () {
+                _this2.success = true;
+            }, function (failure) {
+                var failureMessage = JSON.parse(failure.response);
+                _this2.serverError = {
+                    title: failureMessage.title,
+                    description: failureMessage.description
+                };
+            }).then(function () {
+                return _this2.isWorking = false;
+            });
+        };
+
+        return UserRegistration;
     }()) || _class);
 });
 define('resources/index',["exports"], function (exports) {
@@ -169,13 +250,14 @@ define('services/user-service',['exports', 'aurelia-http-client', '../environmen
             return this.restClient.createRequest(_environment2.default.webApiUsersPath + ('/' + id)).asGet().withBaseUrl(_environment2.default.webApiUrl).withTimeout(2000).send();
         };
 
-        UserService.prototype.postUser = function postUser() {
+        UserService.prototype.postUser = function postUser(user) {
             return this.restClient.createRequest(_environment2.default.webApiUsersPath).asPost().withBaseUrl(_environment2.default.webApiUrl).withContent(user).withTimeout(3000).send();
         };
 
         return UserService;
     }();
 });
-define('text!app.html', ['module'], function(module) { module.exports = "<template><require from=\"bootstrap/css/bootstrap.css\"></require><require from=\"./components/user-list\"></require><user-list></user-list></template>"; });
+define('text!app.html', ['module'], function(module) { module.exports = "<template><require from=\"bootstrap/css/bootstrap.css\"></require><require from=\"./components/user-list\"></require><require from=\"./components/user-registration\"></require><user-list></user-list><user-registration></user-registration></template>"; });
 define('text!components/user-list.html', ['module'], function(module) { module.exports = "<template><div class=\"alert alert-danger\" if.bind=\"error.description\"><strong>${error.title}</strong> ${error.description}</div><table class=\"table table-bordered\"><tr><th>ID</th><th>Nombre</th><th>Apellido</th><th>Email</th><th>Rol</th><th>Estado</th></tr><tr repeat.for=\"user of users\"><td>${user.id}</td><td>${user.firstName}</td><td>${user.lastName}</td><td>${user.email}</td><td>${user.role.name}</td><td>${user.state.name}</td></tr></table></template>"; });
+define('text!components/user-registration.html', ['module'], function(module) { module.exports = "<template><form role=\"form\" submit.delegate=\"register()\"><div class=\"form-group\"><label for=\"firstName\">Nombre:</label><input type=\"text\" class=\"form-control\" value.bind=\"firstName & validate\" placeholder=\"ej: Juan\"></div><div class=\"form-group\"><label for=\"lastName\">Apellido:</label><input type=\"text\" class=\"form-control\" value.bind=\"lastName & validate\" placeholder=\"ej: Perez\"></div><div class=\"form-group\"><label for=\"email\">Email:</label><input type=\"email\" class=\"form-control\" value.bind=\"email & validate\" placeholder=\"ej: juan.perez@email.com\"></div><div class=\"form-group\"><label for=\"password\">Contraseña:</label><input type=\"password\" class=\"form-control\" value.bind=\"password & validate\"></div><div class=\"form-group\"><div class=\"alert alert-warning\" repeat.for=\"error of validationController.errors\">${error.message}</div><div class=\"alert alert-danger\" if.bind=\"serverError.title\"><strong>${serverError.title}</strong> ${serverError.description}</div><div class=\"alert alert-success\" if.bind=\"success\"><strong>Exito!</strong> El usuario fue registrado correctamente.</div></div><button type=\"submit\" class=\"btn btn-primary\" if.bind=\"!isWorking\">Registrar</button> <button type=\"submit\" class=\"btn btn-primary disabled\" if.bind=\"isWorking\"><i class=\"fa fa-spinner fa-spin\"></i> Enviando...</button></form></template>"; });
 //# sourceMappingURL=app-bundle.js.map
