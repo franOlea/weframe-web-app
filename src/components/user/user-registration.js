@@ -1,6 +1,6 @@
 import {inject, NewInstance} from 'aurelia-framework';
-import {UserService} from '../services/user-service';
 import {ValidationController, validateTrigger, ValidationRules} from 'aurelia-validation';
+import {UserService} from '../../services/user-service';
 
 @inject(UserService,NewInstance.of(ValidationController))
 export class UserRegistration {
