@@ -3,5 +3,6 @@ export default {
   testing: true,
   webApiUrl: 'http://weframers-franolea.rhcloud.com',
   webApiUsersPath: 'users',
-  webApiPicturesPath: 'pictures'
+  webApiPicturesPath: 'pictures',
+  webApiFramesPath: 'frames'
 };

@@ -1,0 +1,6 @@
+<template>
+    <form submit.delegate="doUpload()">
+        <input id="files" type="file" accept=".jpg,.jpeg,.png" files.bind="selectedFiles" class="form-control">
+        <input type="submit" class="btn btn-primary" value="Upload" if.bind="selectedFiles.length > 0" />
+    </form>
+</template>

@@ -28,7 +28,8 @@ define('environment',['exports'], function (exports) {
     testing: true,
     webApiUrl: 'http://weframers-franolea.rhcloud.com',
     webApiUsersPath: 'users',
-    webApiPicturesPath: 'pictures'
+    webApiPicturesPath: 'pictures',
+    webApiFramesPath: 'frames'
   };
 });
 define('main',['exports', './environment'], function (exports, _environment) {
@@ -72,6 +73,50 @@ define('resources/index',["exports"], function (exports) {
   exports.configure = configure;
   function configure(config) {}
 });
+define('services/frame-service',['exports', 'aurelia-http-client', '../environment'], function (exports, _aureliaHttpClient, _environment) {
+    'use strict';
+
+    Object.defineProperty(exports, "__esModule", {
+        value: true
+    });
+    exports.FrameService = undefined;
+
+    var _environment2 = _interopRequireDefault(_environment);
+
+    function _interopRequireDefault(obj) {
+        return obj && obj.__esModule ? obj : {
+            default: obj
+        };
+    }
+
+    function _classCallCheck(instance, Constructor) {
+        if (!(instance instanceof Constructor)) {
+            throw new TypeError("Cannot call a class as a function");
+        }
+    }
+
+    var FrameService = exports.FrameService = function () {
+        function FrameService() {
+            _classCallCheck(this, FrameService);
+
+            this.restClient = new _aureliaHttpClient.HttpClient();
+        }
+
+        FrameService.prototype.getFrames = function getFrames(pageNumber, pageSize) {
+            return this.restClient.createRequest(_environment2.default.webApiFramesPath).asGet().withBaseUrl(_environment2.default.webApiUrl).withTimeout(5000).send();
+        };
+
+        FrameService.prototype.getFrame = function getFrame(id) {
+            return this.restClient.createRequest(_environment2.default.webApiFramesPath + ('/' + id)).asGet().withBaseUrl(_environment2.default.webApiUrl).withTimeout(2000).send();
+        };
+
+        FrameService.prototype.postFrame = function postFrame(frame) {
+            return this.restClient.createRequest(_environment2.default.webApiFramesPath).asPost().withBaseUrl(_environment2.default.webApiUrl).withContent(frame).withTimeout(3000).send();
+        };
+
+        return FrameService;
+    }();
+});
 define('services/picture-service',['exports', 'aurelia-http-client', '../environment'], function (exports, _aureliaHttpClient, _environment) {
     'use strict';
 
@@ -106,6 +151,17 @@ define('services/picture-service',['exports', 'aurelia-http-client', '../environ
                 uniqueName: uniquePictureName,
                 original: isOriginalSize
             }).withBaseUrl(_environment2.default.webApiUrl).withTimeout(5000).send();
+        };
+
+        PictureService.prototype.putPicture = function putPicture(uniqueName, file, formatName, onProgress) {
+            var formData = new FormData();
+            formData.append('uniqueName', uniqueName);
+            formData.append('file', file);
+            formData.append('formatName', formatName);
+
+            return this.restClient.createRequest(_environment2.default.webApiPicturesPath).asPost().withContent(formData).withBaseUrl(_environment2.default.webApiUrl).withProgressCallback(function (evt) {
+                return console.log(evt);
+            }).send();
         };
 
         return PictureService;
@@ -168,6 +224,382 @@ define('services/user-service',['exports', 'aurelia-http-client', '../environmen
 
         return UserService;
     }();
+});
+define('components/frame/frame-list',['exports', 'aurelia-framework', '../../services/frame-service'], function (exports, _aureliaFramework, _frameService) {
+    'use strict';
+
+    Object.defineProperty(exports, "__esModule", {
+        value: true
+    });
+    exports.FrameList = undefined;
+
+    function _classCallCheck(instance, Constructor) {
+        if (!(instance instanceof Constructor)) {
+            throw new TypeError("Cannot call a class as a function");
+        }
+    }
+
+    var _dec, _class;
+
+    var FrameList = exports.FrameList = (_dec = (0, _aureliaFramework.inject)(_frameService.FrameService), _dec(_class = function () {
+        function FrameList(frameService) {
+            _classCallCheck(this, FrameList);
+
+            this.frameService = frameService;
+            this.frames = [];
+            this.error = {};
+            this.isWorking = false;
+        }
+
+        FrameList.prototype.created = function created() {
+            this.updateFrameList(0, 10);
+        };
+
+        FrameList.prototype.updateFrameList = function updateFrameList(page, size) {
+            var _this = this;
+
+            this.isWorking = true;
+            this.frameService.getFrames(page, size).then(function (frameResponse) {
+                _this.frames = JSON.parse(frameResponse.response);
+                _this.isWorking = false;
+            }, function (errorResponse) {
+                _this.error.title = 'Ups';
+                _this.error.description = 'Parece que el sistema no response, por favor intenta nuevamente mas tarde.';
+                _this.isWorking = false;
+            });
+        };
+
+        return FrameList;
+    }()) || _class);
+});
+define('components/frame/frame-thumbnail',['exports', 'aurelia-framework', '../../services/frame-service', '../../services/picture-service'], function (exports, _aureliaFramework, _frameService, _pictureService) {
+    'use strict';
+
+    Object.defineProperty(exports, "__esModule", {
+        value: true
+    });
+    exports.FrameThumbnail = undefined;
+
+    function _initDefineProp(target, property, descriptor, context) {
+        if (!descriptor) return;
+        Object.defineProperty(target, property, {
+            enumerable: descriptor.enumerable,
+            configurable: descriptor.configurable,
+            writable: descriptor.writable,
+            value: descriptor.initializer ? descriptor.initializer.call(context) : void 0
+        });
+    }
+
+    function _classCallCheck(instance, Constructor) {
+        if (!(instance instanceof Constructor)) {
+            throw new TypeError("Cannot call a class as a function");
+        }
+    }
+
+    function _applyDecoratedDescriptor(target, property, decorators, descriptor, context) {
+        var desc = {};
+        Object['ke' + 'ys'](descriptor).forEach(function (key) {
+            desc[key] = descriptor[key];
+        });
+        desc.enumerable = !!desc.enumerable;
+        desc.configurable = !!desc.configurable;
+
+        if ('value' in desc || desc.initializer) {
+            desc.writable = true;
+        }
+
+        desc = decorators.slice().reverse().reduce(function (desc, decorator) {
+            return decorator(target, property, desc) || desc;
+        }, desc);
+
+        if (context && desc.initializer !== void 0) {
+            desc.value = desc.initializer ? desc.initializer.call(context) : void 0;
+            desc.initializer = undefined;
+        }
+
+        if (desc.initializer === void 0) {
+            Object['define' + 'Property'](target, property, desc);
+            desc = null;
+        }
+
+        return desc;
+    }
+
+    function _initializerWarningHelper(descriptor, context) {
+        throw new Error('Decorating class property failed. Please ensure that transform-class-properties is enabled.');
+    }
+
+    var _dec, _class, _desc, _value, _class2, _descriptor;
+
+    var FrameThumbnail = exports.FrameThumbnail = (_dec = (0, _aureliaFramework.inject)(_frameService.FrameService, _pictureService.PictureService), _dec(_class = (_class2 = function () {
+        function FrameThumbnail(frameService, pictureService) {
+            _classCallCheck(this, FrameThumbnail);
+
+            _initDefineProp(this, 'id', _descriptor, this);
+
+            this.frameService = frameService;
+            this.pictureService = pictureService;
+            this.isWorking = false;
+        }
+
+        FrameThumbnail.prototype.created = function created() {};
+
+        return FrameThumbnail;
+    }(), (_descriptor = _applyDecoratedDescriptor(_class2.prototype, 'id', [_aureliaFramework.bindable], {
+        enumerable: true,
+        initializer: null
+    })), _class2)) || _class);
+});
+define('components/frame/frame-upload',['exports', 'aurelia-framework', 'aurelia-validation', '../../services/picture-service', '../../services/frame-service'], function (exports, _aureliaFramework, _aureliaValidation, _pictureService, _frameService) {
+    'use strict';
+
+    Object.defineProperty(exports, "__esModule", {
+        value: true
+    });
+    exports.FrameUpload = undefined;
+
+    function _classCallCheck(instance, Constructor) {
+        if (!(instance instanceof Constructor)) {
+            throw new TypeError("Cannot call a class as a function");
+        }
+    }
+
+    var _dec, _class;
+
+    var FrameUpload = exports.FrameUpload = (_dec = (0, _aureliaFramework.inject)(_pictureService.PictureService, _frameService.FrameService, _aureliaFramework.NewInstance.of(_aureliaValidation.ValidationController)), _dec(_class = function () {
+        function FrameUpload(pictureService, frameService, validationController) {
+            _classCallCheck(this, FrameUpload);
+
+            this.pictureService = pictureService;
+            this.frameService = frameService;
+            this.validationController = validationController;
+            this.isWorking = false;
+            this.success = false;
+            this.serverError = {};
+        }
+
+        FrameUpload.prototype.created = function created() {
+            this.validationController.validateTrigger = _aureliaValidation.validateTrigger.manual;
+
+            _aureliaValidation.ValidationRules.ensure("name").required().withMessage("El nombre unico no puede estar vacio.").ensure("uniqueName").required().withMessage("El nombre unico no puede estar vacio.").ensure("imageUniqueName").required().withMessage("El nombre unico de la imagen no puede estar vacio.").ensure("imageFile").required().withMessage("El archivo no puede estar vacio.").ensure("imageFormatName").required().withMessage("El nombre del formato de archivo de imagen no puede estar vacio.").on(this);
+        };
+
+        FrameUpload.prototype.upload = function upload() {
+            var _this = this;
+
+            this.success = false;
+            this.isWorking = true;
+
+            console.log(this.imageFiles);
+
+            this.validationController.validate().then(function (validation) {
+                if (validation.valid) {
+                    _this.doUpload();
+                } else {
+                    _this.isWorking = false;
+                }
+            });
+        };
+
+        FrameUpload.prototype.doUpload = function doUpload() {
+            var _this2 = this;
+
+            return this.pictureService.putPicture(this.imageUniqueName, this.imageFiles[0], this.imageFormatName, null).then(function () {
+                _this2.doUploadFrame();
+            }, function (failure) {
+                var failureMessage = JSON.parse(failure.response);
+                _this2.serverError = {
+                    title: failureMessage.title,
+                    description: failureMessage.description
+                };
+            });
+        };
+
+        FrameUpload.prototype.doUploadFrame = function doUploadFrame() {
+            var _this3 = this;
+
+            var frame = {
+                name: this.name,
+                uniqueName: this.uniqueName,
+                description: this.description,
+                height: this.height,
+                length: this.width,
+                picture: {
+                    imageKey: this.imageUniqueName
+                },
+                price: this.price
+            };
+
+            this.frameService.postFrame(frame).then(function () {
+                _this3.success = true;
+            }, function (failure) {
+                var failureMessage = JSON.parse(failure.response);
+                _this3.serverError = {
+                    title: failureMessage.title,
+                    description: failureMessage.description
+                };
+            }).then(function () {
+                return _this3.isWorking = false;
+            });
+        };
+
+        return FrameUpload;
+    }()) || _class);
+});
+define('components/picture/canvas-test',['exports', 'aurelia-framework', '../../services/picture-service'], function (exports, _aureliaFramework, _pictureService) {
+    'use strict';
+
+    Object.defineProperty(exports, "__esModule", {
+        value: true
+    });
+    exports.CanvasTest = undefined;
+
+    function _classCallCheck(instance, Constructor) {
+        if (!(instance instanceof Constructor)) {
+            throw new TypeError("Cannot call a class as a function");
+        }
+    }
+
+    var _dec, _class;
+
+    var CanvasTest = exports.CanvasTest = (_dec = (0, _aureliaFramework.inject)(_pictureService.PictureService), _dec(_class = function () {
+        function CanvasTest(pictureService) {
+            _classCallCheck(this, CanvasTest);
+
+            this.pictureService = pictureService;
+            this.rangeVal = 0;
+        }
+
+        CanvasTest.prototype.showVal = function showVal() {
+            this.recolor(this.rangeVal);
+        };
+
+        CanvasTest.prototype.created = function created() {
+            var _this = this;
+
+            console.log(this.rgbToHsl(0, 0, 0));
+            console.log(this.rgbToHsl(255, 255, 0));
+            console.log(this.rgbToHsl(255, 255, 255));
+            this.pictureService.getPicture('testPicture', false).then(function (success) {
+                console.log('SUCCESS');
+                console.log(success);
+                var response = JSON.parse(success.response);
+                _this.drawImage(response.imageUrl);
+            }, function (failure) {
+                console.log('FAILURE');
+                console.log(failure);
+            });
+        };
+
+        CanvasTest.prototype.drawImage = function drawImage(imageUrl) {
+            var _this2 = this;
+
+            this.ctx = this.canvas.getContext("2d");
+
+            var img = new Image();
+            img.crossOrigin = "anonymous";
+            img.onload = function () {
+                _this2.ctx.drawImage(img, 0, 0, 600, 400);
+                _this2.ctx.drawImage(img, 0, 400, 600, 400);
+
+                _this2.recolor(.33);
+            };
+            img.src = imageUrl;
+        };
+
+        CanvasTest.prototype.recolor = function recolor(colorshift) {
+            var imgData = this.ctx.getImageData(0, 0, 600, 400);
+            var data = imgData.data;
+
+            for (var i = 0; i < data.length; i += 4) {
+                var red = data[i + 0];
+                var green = data[i + 1];
+                var blue = data[i + 2];
+                var alpha = data[i + 3];
+
+                if (alpha < 200) {
+                    continue;
+                }
+
+                var hsl = this.rgbToHsl(red, green, blue);
+                var hue = hsl.h * 360;
+
+                if (hue > 200 && hue < 300) {
+                    var newRgb = this.hslToRgb(hsl.h + colorshift, hsl.s, hsl.l);
+                    data[i + 0] = newRgb.r;
+                    data[i + 1] = newRgb.g;
+                    data[i + 2] = newRgb.b;
+                    data[i + 3] = 255;
+                }
+            }
+            this.ctx.putImageData(imgData, 400, 0);
+        };
+
+        CanvasTest.prototype.rgbToHsl = function rgbToHsl(r, g, b) {
+            r /= 255, g /= 255, b /= 255;
+            var max = Math.max(r, g, b),
+                min = Math.min(r, g, b);
+            var h,
+                s,
+                l = (max + min) / 2;
+
+            if (max == min) {
+                h = s = 0;
+            } else {
+                var d = max - min;
+                s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+                switch (max) {
+                    case r:
+                        h = (g - b) / d + (g < b ? 6 : 0);
+                        break;
+                    case g:
+                        h = (b - r) / d + 2;
+                        break;
+                    case b:
+                        h = (r - g) / d + 4;
+                        break;
+                }
+                h /= 6;
+            }
+
+            return {
+                h: h,
+                s: s,
+                l: l
+            };
+        };
+
+        CanvasTest.prototype.hslToRgb = function hslToRgb(h, s, l) {
+            var r, g, b;
+
+            if (s == 0) {
+                r = g = b = l;
+            } else {
+                var hue2rgb = function hue2rgb(p, q, t) {
+                    if (t < 0) t += 1;
+                    if (t > 1) t -= 1;
+                    if (t < 1 / 6) return p + (q - p) * 6 * t;
+                    if (t < 1 / 2) return q;
+                    if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+                    return p;
+                };
+
+                var q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+                var p = 2 * l - q;
+                r = hue2rgb(p, q, h + 1 / 3);
+                g = hue2rgb(p, q, h);
+                b = hue2rgb(p, q, h - 1 / 3);
+            }
+
+            return {
+                r: Math.round(r * 255),
+                g: Math.round(g * 255),
+                b: Math.round(b * 255)
+            };
+        };
+
+        return CanvasTest;
+    }()) || _class);
 });
 define('components/picture/interact',['module', 'exports'], function (module, exports) {
     'use strict';
@@ -5204,8 +5636,51 @@ define('components/user/user-registration',['exports', 'aurelia-framework', 'aur
         return UserRegistration;
     }()) || _class);
 });
-define('text!app.html', ['module'], function(module) { module.exports = "<template><require from=\"bootstrap/css/bootstrap.css\"></require><require from=\"./components/picture/picture-test\"></require><picture-test></picture-test></template>"; });
+define('components/picture/picture-upload',['exports', 'aurelia-framework', '../../services/picture-service'], function (exports, _aureliaFramework, _pictureService) {
+    'use strict';
+
+    Object.defineProperty(exports, "__esModule", {
+        value: true
+    });
+    exports.PictureUpload = undefined;
+
+    function _classCallCheck(instance, Constructor) {
+        if (!(instance instanceof Constructor)) {
+            throw new TypeError("Cannot call a class as a function");
+        }
+    }
+
+    var _dec, _class;
+
+    var PictureUpload = exports.PictureUpload = (_dec = (0, _aureliaFramework.inject)(_pictureService.PictureService), _dec(_class = function () {
+        function PictureUpload(pictureService) {
+            _classCallCheck(this, PictureUpload);
+
+            this.pictureService = pictureService;
+        }
+
+        PictureUpload.prototype.doUpload = function doUpload() {
+            this.pictureService.putPicture('test-file-upload', this.selectedFiles[0], 'png').then(function (success) {
+                console.log(success);
+            }, function (failure) {
+                console.log(failure);
+            });
+        };
+
+        PictureUpload.prototype.clearFiles = function clearFiles() {
+            document.getElementById("files").value = "";
+        };
+
+        return PictureUpload;
+    }()) || _class);
+});
+define('text!app.html', ['module'], function(module) { module.exports = "<template><require from=\"bootstrap/css/bootstrap.css\"></require><require from=\"./components/frame/frame-upload\"></require><frame-upload></frame-upload><require from=\"./components/frame/frame-list\"></require><frame-list></frame-list></template>"; });
+define('text!components/frame/frame-list.html', ['module'], function(module) { module.exports = "<template><div class=\"alert alert-danger\" if.bind=\"error.description\"><strong>${error.title}</strong> ${error.description}</div><table class=\"table table-bordered\"><tr><th>ID</th><th>Nombre unico</th><th>Nombre</th><th>Descripcion</th><th>Alto</th><th>Ancho</th><th>Imagen (nombre unico)</th><th>Precio</th></tr><tr repeat.for=\"frame of frames\"><td>${frame.id}</td><td>${frame.uniqueName}</td><td>${frame.name}</td><td>${frame.description}</td><td>${frame.height}</td><td>${frame.length}</td><td>${frame.picture.imageKey}</td><td>${frame.price}</td></tr></table></template>"; });
+define('text!components/frame/frame-thumbnail.html', ['module'], function(module) { module.exports = "<template></template>"; });
+define('text!components/frame/frame-upload.html', ['module'], function(module) { module.exports = "<template><form role=\"form\" submit.delegate=\"upload()\"><div class=\"form-group\"><label for=\"name\">Nombre:</label><input type=\"text\" class=\"form-control\" value.bind=\"name & validate\"></div><div class=\"form-group\"><label for=\"uniqueName\">Nombre unico:</label><input type=\"text\" class=\"form-control\" value.bind=\"uniqueName & validate\"></div><div class=\"form-group\"><label for=\"description\">Descripcion:</label><textarea class=\"form-control\" name=\"description\" cols=\"100\" rows=\"5\" value.bind=\"description\"></textarea></div><div class=\"form-group\"><label for=\"height\">Alto:</label><input type=\"number\" class=\"form-control\" value.bind=\"height & validate\"></div><div class=\"form-group\"><label for=\"width\">Ancho:</label><input type=\"number\" class=\"form-control\" value.bind=\"width & validate\"></div><div class=\"form-group\"><label for=\"price\">Precio:</label><input type=\"number\" class=\"form-control\" value.bind=\"price & validate\"></div><div class=\"form-group\"><label for=\"imageFile\">Imagen:</label><input type=\"file\" class=\"form-control\" files.bind=\"imageFiles & validate\" accept=\".jpg,.jpeg,.png\"></div><div class=\"form-group\"><label for=\"imageUniqueName\">Nombre unico de imagen:</label><input type=\"text\" class=\"form-control\" value.bind=\"imageUniqueName & validate\"></div><div class=\"form-group\"><label for=\"imageFormatName\">Formato de imagen:</label><input type=\"text\" class=\"form-control\" value.bind=\"imageFormatName & validate\" placeholder=\"ej: jpg\"></div><div class=\"form-group\"><div class=\"alert alert-warning\" repeat.for=\"error of validationController.errors\">${error.message}</div><div class=\"alert alert-danger\" if.bind=\"serverError.title\"><strong>${serverError.title}</strong> ${serverError.description}</div><div class=\"alert alert-success\" if.bind=\"success\"><strong>Exito!</strong> La imagen se subio correctamente.</div></div><button type=\"submit\" class=\"btn btn-primary\" if.bind=\"!isWorking\">Subir</button> <button type=\"submit\" class=\"btn btn-primary disabled\" if.bind=\"isWorking\"><i class=\"fa fa-spinner fa-spin\"></i> Subiendo...</button></form></template>"; });
+define('text!components/picture/canvas-test.html', ['module'], function(module) { module.exports = "<template><input id=\"ANGLE\" type=\"range\" min=\"-1\" max=\"1\" value=\"0\" step=\"0.05\" value.bind=\"rangeVal\" click.delegate=\"showVal()\"><br><canvas ref=\"canvas\" id=\"canvas\" width=\"600\" height=\"800\" style=\"border:1px solid red\"></canvas></template>"; });
 define('text!components/picture/picture-test.html', ['module'], function(module) { module.exports = "<template><button type=\"button\" click.delegate=\"test()\">Test</button><div id=\"myCanvas\" style=\"background:gray;width:960px;height:540px\"><img src=\"${pictureUrl}\" if.bind=\"isLoaded\" id=\"dragTest\"></div></template>"; });
 define('text!components/user/user-list.html', ['module'], function(module) { module.exports = "<template><div class=\"alert alert-danger\" if.bind=\"error.description\"><strong>${error.title}</strong> ${error.description}</div><table class=\"table table-bordered\"><tr><th>ID</th><th>Nombre</th><th>Apellido</th><th>Email</th><th>Rol</th><th>Estado</th></tr><tr repeat.for=\"user of users\"><td>${user.id}</td><td>${user.firstName}</td><td>${user.lastName}</td><td>${user.email}</td><td>${user.role.name}</td><td>${user.state.name}</td></tr></table></template>"; });
 define('text!components/user/user-registration.html', ['module'], function(module) { module.exports = "<template><form role=\"form\" submit.delegate=\"register()\"><div class=\"form-group\"><label for=\"firstName\">Nombre:</label><input type=\"text\" class=\"form-control\" value.bind=\"firstName & validate\" placeholder=\"ej: Juan\"></div><div class=\"form-group\"><label for=\"lastName\">Apellido:</label><input type=\"text\" class=\"form-control\" value.bind=\"lastName & validate\" placeholder=\"ej: Perez\"></div><div class=\"form-group\"><label for=\"email\">Email:</label><input type=\"email\" class=\"form-control\" value.bind=\"email & validate\" placeholder=\"ej: juan.perez@email.com\"></div><div class=\"form-group\"><label for=\"password\">Contraseña:</label><input type=\"password\" class=\"form-control\" value.bind=\"password & validate\"></div><div class=\"form-group\"><div class=\"alert alert-warning\" repeat.for=\"error of validationController.errors\">${error.message}</div><div class=\"alert alert-danger\" if.bind=\"serverError.title\"><strong>${serverError.title}</strong> ${serverError.description}</div><div class=\"alert alert-success\" if.bind=\"success\"><strong>Exito!</strong> El usuario fue registrado correctamente.</div></div><button type=\"submit\" class=\"btn btn-primary\" if.bind=\"!isWorking\">Registrar</button> <button type=\"submit\" class=\"btn btn-primary disabled\" if.bind=\"isWorking\"><i class=\"fa fa-spinner fa-spin\"></i> Enviando...</button></form></template>"; });
+define('text!components/picture/picture-upload.html', ['module'], function(module) { module.exports = "<template><form submit.delegate=\"doUpload()\"><input id=\"files\" type=\"file\" accept=\".jpg,.jpeg,.png\" files.bind=\"selectedFiles\" class=\"form-control\"> <input type=\"submit\" class=\"btn btn-primary\" value=\"Upload\" if.bind=\"selectedFiles.length > 0\"></form></template>"; });
 //# sourceMappingURL=app-bundle.js.map
