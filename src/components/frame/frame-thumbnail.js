@@ -15,6 +15,25 @@ export class FrameThumbnail {
     }
 
     created() {
-        
+    }
+    
+    attached() {
+        console.log(this.id);
+        this.frameService.getFrame(this.id).then(
+            success => {
+                this.frame = JSON.parse(success.response);
+                this.pictureService.getPicture(this.frame.picture.imageKey).then(
+                    success => {
+                        this.frame.picture = JSON.parse(success.response)
+                    },
+                    failure => {
+                        console.log(failure)
+                    }
+                );
+            },
+            failure => {
+                console.log(failure);
+            }
+        );
     }
 }
