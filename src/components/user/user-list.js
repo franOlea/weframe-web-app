@@ -5,7 +5,7 @@ import {UserService} from '../../services/user-service';
 export class UserList {
     constructor(userService) {
         this.userService = userService;
-        this.users = [];
+        // this.users = [];
         this.error = {};
         this.isWorking = false;
     }

@@ -4,7 +4,7 @@ import {PictureService} from '../../services/picture-service';
 import {FrameService} from '../../services/frame-service';
 
 @inject(PictureService,FrameService,NewInstance.of(ValidationController))
-export class FrameUpload {
+export class FrameUploadForm {
 
     constructor(pictureService, frameService, validationController) {
         this.pictureService = pictureService;

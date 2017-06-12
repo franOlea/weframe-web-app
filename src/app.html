@@ -1,25 +1,36 @@
 <template>
-  <require from="bootstrap/css/bootstrap.css"></require>
-  <!--<require from="./components/user/user-list"></require>
-  <require from="./components/user/user-registration"></require>
-  <require from="./components/picture/picture-test"></require>
-  <require from="./components/frame/frame-list"></require>
-  <require from="./components/picture/canvas-test"></require>-->
+	<require from="bootstrap/css/bootstrap.css"></require>
+	<nav class="navbar navbar-default">
+		<div class="container-fluid">
+			<div class="navbar-header">
+				<button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1"
+				 aria-expanded="false">
+				<span class="sr-only">Toggle navigation</span>
+				<span class="icon-bar"></span>
+				<span class="icon-bar"></span>
+				<span class="icon-bar"></span>
+      			</button>
+				<a class="navbar-brand" href="#">WeFrame</a>
+			</div>
 
-  <!--<user-list></user-list>
-  <user-registration></user-registration>
-  <picture-test></picture-test>
-  <canvas-test></canvas-test>-->
-
-  <require from="./components/frame/frame-thumbnail"></require>
-  <frame-thumbnail id.bind="1"></frame-thumbnail>
-
-  <require from="./components/frame/frame-upload"></require>
-  <frame-upload></frame-upload>
-
-  <require from="./components/frame/frame-list"></require>
-  <frame-list></frame-list>
-
-  <!--<require from="./components/picture/picture-upload"></require>
-  <picture-upload></picture-upload>-->
+			<div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+				<ul class="nav navbar-nav">
+					<li class="active"><a href="#">Link <span class="sr-only">(current)</span></a></li>
+					<li><a href="#">Link</a></li>
+					<li class="dropdown">
+						<a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Admin <span class="caret"></span></a>
+						<ul class="dropdown-menu">
+							<li><a route-href="route: index">Galeria de marcos</a></li>
+							<li><a route-href="route: frame-admin-list">Lista de marcos</a></li>
+							<li><a route-href="route: frame-admin">Marcos</a></li>
+							<li role="separator" class="divider"></li>
+							<li><a route-href="route: user-admin-list">Lista de usuarios</a></li>
+						</ul>
+					</li>
+				</ul>
+			</div>
+		</div>
+	</nav>
+	
+	<router-view class="container"></router-view>
 </template>

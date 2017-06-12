@@ -1,0 +1,11 @@
+<template>
+    <require from="./frame-thumbnail"></require>
+    <div class="alert alert-danger" if.bind="error.description">
+        <strong>${error.title}</strong> ${error.description}
+    </div>
+    <div class="row col-md-10 col-md-offset-1">
+        <div class="col-md-3" repeat.for="frame of frames">
+            <frame-thumbnail frame.bind="frame"></frame-thumbnail>
+        </div>
+    </div>
+</template>

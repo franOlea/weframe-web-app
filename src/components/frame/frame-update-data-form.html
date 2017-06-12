@@ -1,0 +1,39 @@
+<template>
+    <form role="form" submit.delegate="update()">
+        <div class="form-group">
+            <label for="name">Nombre:</label>
+            <input type="text" class="form-control" value.bind="frame.name & validate">
+        </div>
+        <div class="form-group">
+            <label for="description">Descripcion:</label>
+            <textarea class="form-control" name="description" cols="100" rows="5" value.bind="frame.description"></textarea>
+        </div>
+        <div class="form-group">
+            <label for="height">Alto:</label>
+            <input type="number" class="form-control" value.bind="frame.height & validate">
+        </div>
+        <div class="form-group">
+            <label for="length">Ancho:</label>
+            <input type="number" class="form-control" value.bind="frame.length & validate">
+        </div>
+        <div class="form-group">
+            <label for="price">Precio:</label>
+            <input type="number" class="form-control" value.bind="frame.price & validate">
+        </div>
+        <div class="form-group">
+            <div class="alert alert-warning" repeat.for="error of validationController.errors">
+                <!--<strong>${error.title}</strong> ${error.description}-->
+                ${error.message}
+            </div>
+            <div class="alert alert-danger" if.bind="serverError.title">
+                <strong>${serverError.title}</strong> ${serverError.description}
+            </div>
+            <div class="alert alert-success" if.bind="success">
+                <strong>Exito!</strong> La imagen se subio correctamente.
+            </div>
+        </div>
+        <button type="submit" class="btn btn-primary" if.bind="!isWorking">Subir</button>
+        <button type="reset" class="btn btn-default">Limpiar</button>
+        <button type="button" class="btn btn-primary disabled" if.bind="isWorking"><i class="fa fa-spinner fa-spin"></i> Subiendo...</button>
+    </form>
+</template>

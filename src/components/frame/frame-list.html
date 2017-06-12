@@ -1,27 +1,48 @@
 <template>
-    <div class="alert alert-danger" if.bind="error.description">
-        <strong>${error.title}</strong> ${error.description}
+    <div class="row">
+        <div class="col-md-8 col-md-offset-2">
+            <div class="alert alert-danger" if.bind="error.description">
+                <strong>${error.title}</strong> ${error.description}
+            </div>
+        </div>
     </div>
-    <table class="table table-bordered">
-        <tr>
-            <th>ID</th>
-            <th>Nombre unico</th>
-            <th>Nombre</th>
-            <th>Descripcion</th>
-            <th>Alto</th>
-            <th>Ancho</th>
-            <th>Imagen (nombre unico)</th>
-            <th>Precio</th>
-        </tr>
-        <tr repeat.for="frame of frames">
-            <td>${frame.id}</td>
-            <td>${frame.uniqueName}</td>
-            <td>${frame.name}</td>
-            <td>${frame.description}</td>
-            <td>${frame.height}</td>
-            <td>${frame.length}</td>
-            <td>${frame.picture.imageKey}</td>
-            <td>${frame.price}</td>
-        </tr>
-    </table>
+    <div class="row">
+        <div class="col-md-10 col-md-offset-1">
+            <table class="table table-bordered" if.bind="frames">
+                <tr>
+                    <th>ID</th>
+                    <th>Nombre unico</th>
+                    <th>Nombre</th>
+                    <th>Descripcion</th>
+                    <th>Alto</th>
+                    <th>Ancho</th>
+                    <th>Imagen (nombre unico)</th>
+                    <th>Precio</th>
+                    <th>Acciones</th>
+                </tr>
+                <tr repeat.for="frame of frames">
+                    <td>${frame.id}</td>
+                    <td>${frame.uniqueName}</td>
+                    <td>${frame.name}</td>
+                    <td>${frame.description}</td>
+                    <td>${frame.height}</td>
+                    <td>${frame.length}</td>
+                    <td>${frame.picture.imageKey}</td>
+                    <td>${frame.price}</td>
+                    <td>
+                        <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#frameDetailModal" click.delegate="showDetails(frame.id)">
+                            <i class="fa fa-info" aria-hidden="true"></i>
+                            Detalles
+                        </button>
+                        <button type="button" class="btn btn-danger">
+                            <i class="fa fa-times" aria-hidden="true"></i>
+                            Eliminar
+                        </button>
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </div>
+    <require from="./frame-detail-modal"></require>
+    <frame-detail-modal view-model.ref="frameDetailsViewModel"></frame-detail-modal>
 </template>

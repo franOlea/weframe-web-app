@@ -1,13 +1,13 @@
 <template>
     <div class="thumbnail">
-        <img src="${frame.picture.imageUrl}">
+        <img src="${frame.picture.imageUrl}" load.trigger="setHasLoaded()">
         <div class="caption">
             <h3>${frame.name}</h3>
             <p>${frame.description}</p>
             <p>Alto: ${frame.height} cm.</p>
-            <p>Ancho: ${frame.width} cm.</p>
+            <p>Ancho: ${frame.length} cm.</p>
             <p>
-                <a href="#" class="btn btn-primary" role="button">${frame.price}</a>
+                <a href="#" class="btn btn-primary" role="button">$ ${frame.price} - Personalizar</a>
             </p>
         </div>
     </div>

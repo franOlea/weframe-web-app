@@ -49,6 +49,7 @@
             </div>
         </div>
         <button type="submit" class="btn btn-primary" if.bind="!isWorking">Subir</button>
-        <button type="submit" class="btn btn-primary disabled" if.bind="isWorking"><i class="fa fa-spinner fa-spin"></i> Subiendo...</button>
+        <button type="reset" class="btn btn-default">Limpiar</button>
+        <button type="button" class="btn btn-primary disabled" if.bind="isWorking"><i class="fa fa-spinner fa-spin"></i> Subiendo...</button>
     </form>
 </template>
