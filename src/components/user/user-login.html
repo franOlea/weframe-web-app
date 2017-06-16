@@ -1,0 +1,36 @@
+<template>
+
+    <!--<script>
+        window.fbAsyncInit = function () {
+            FB.init({
+                appId: '1417159141654187',
+                cookie: true,
+                xfbml: true,
+                version: 'v2.8'
+            });
+            FB.AppEvents.logPageView();
+        };
+
+        (function (d, s, id) {
+            var js, fjs = d.getElementsByTagName(s)[0];
+            if (d.getElementById(id)) { return; }
+            js = d.createElement(s); js.id = id;
+            js.src = "//connect.facebook.net/en_US/sdk.js";
+            fjs.parentNode.insertBefore(js, fjs);
+        }(document, 'script', 'facebook-jssdk'));
+
+
+        function checkLoginState() {
+            FB.getLoginStatus(function (response) {
+                console.log(response);
+                statusChangeCallback(response);
+            });
+        }
+    </script>
+
+
+    <fb:login-button scope="public_profile, email" onlogin="checkLoginState();">
+    </fb:login-button>-->
+    <a href="localhost:8080/auth/facebook"><button>Login with facebook</button></a>
+
+</template>

@@ -271,6 +271,24 @@ define('services/user-service',['exports', 'aurelia-http-client', '../environmen
         return UserService;
     }();
 });
+define('components/frame/frame-detail-modal',['exports', 'aurelia-framework'], function (exports, _aureliaFramework) {
+    'use strict';
+
+    Object.defineProperty(exports, "__esModule", {
+        value: true
+    });
+    exports.FrameDetailModal = undefined;
+
+    function _classCallCheck(instance, Constructor) {
+        if (!(instance instanceof Constructor)) {
+            throw new TypeError("Cannot call a class as a function");
+        }
+    }
+
+    var FrameDetailModal = exports.FrameDetailModal = function FrameDetailModal() {
+        _classCallCheck(this, FrameDetailModal);
+    };
+});
 define('components/frame/frame-gallery',['exports', 'aurelia-framework', '../../services/frame-service', '../../services/picture-service'], function (exports, _aureliaFramework, _frameService, _pictureService) {
     'use strict';
 
@@ -466,6 +484,117 @@ define('components/frame/frame-thumbnail',['exports', 'aurelia-framework'], func
         enumerable: true,
         initializer: null
     })), _class);
+});
+define('components/frame/frame-update-data-form',['exports', 'aurelia-framework', 'aurelia-validation', '../../services/frame-service'], function (exports, _aureliaFramework, _aureliaValidation, _frameService) {
+    'use strict';
+
+    Object.defineProperty(exports, "__esModule", {
+        value: true
+    });
+    exports.FrameUpdateDataForm = undefined;
+
+    function _initDefineProp(target, property, descriptor, context) {
+        if (!descriptor) return;
+        Object.defineProperty(target, property, {
+            enumerable: descriptor.enumerable,
+            configurable: descriptor.configurable,
+            writable: descriptor.writable,
+            value: descriptor.initializer ? descriptor.initializer.call(context) : void 0
+        });
+    }
+
+    function _classCallCheck(instance, Constructor) {
+        if (!(instance instanceof Constructor)) {
+            throw new TypeError("Cannot call a class as a function");
+        }
+    }
+
+    function _applyDecoratedDescriptor(target, property, decorators, descriptor, context) {
+        var desc = {};
+        Object['ke' + 'ys'](descriptor).forEach(function (key) {
+            desc[key] = descriptor[key];
+        });
+        desc.enumerable = !!desc.enumerable;
+        desc.configurable = !!desc.configurable;
+
+        if ('value' in desc || desc.initializer) {
+            desc.writable = true;
+        }
+
+        desc = decorators.slice().reverse().reduce(function (desc, decorator) {
+            return decorator(target, property, desc) || desc;
+        }, desc);
+
+        if (context && desc.initializer !== void 0) {
+            desc.value = desc.initializer ? desc.initializer.call(context) : void 0;
+            desc.initializer = undefined;
+        }
+
+        if (desc.initializer === void 0) {
+            Object['define' + 'Property'](target, property, desc);
+            desc = null;
+        }
+
+        return desc;
+    }
+
+    function _initializerWarningHelper(descriptor, context) {
+        throw new Error('Decorating class property failed. Please ensure that transform-class-properties is enabled.');
+    }
+
+    var _dec, _class, _desc, _value, _class2, _descriptor;
+
+    var FrameUpdateDataForm = exports.FrameUpdateDataForm = (_dec = (0, _aureliaFramework.inject)(_frameService.FrameService, _aureliaFramework.NewInstance.of(_aureliaValidation.ValidationController)), _dec(_class = (_class2 = function () {
+        function FrameUpdateDataForm(frameService, validationController) {
+            _classCallCheck(this, FrameUpdateDataForm);
+
+            _initDefineProp(this, 'frame', _descriptor, this);
+
+            this.frameService = frameService;
+            this.validationController = validationController;
+            this.isWorking = false;
+            this.success = false;
+            this.serverError = {};
+        }
+
+        FrameUpdateDataForm.prototype.created = function created() {
+            this.validationController.validateTrigger = _aureliaValidation.validateTrigger.manual;
+
+            _aureliaValidation.ValidationRules.ensure("frame.name").required().withMessage("El nombre unico no puede estar vacio.").ensure("frame.description").required().withMessage("La descripcion no puede estar vacia.").ensure("frame.height").required().satisfies(function (value) {
+                return value > 0;
+            }).withMessage("El alto del marco no puede estar vacio o ser menor a 0.").ensure("frame.length").required().satisfies(function (value) {
+                return value > 0;
+            }).withMessage("El ancho del marco no puede estar vacio o ser menor a 0.").ensure("frame.prive").required().satisfies(function (value) {
+                return value > 0;
+            }).withMessage("El precio del marco no puede estar vacio o ser menor a 0.").on(this);
+        };
+
+        FrameUpdateDataForm.prototype.upload = function upload() {
+            var _this = this;
+
+            this.success = false;
+            this.isWorking = true;
+
+            console.log(this.imageFiles);
+
+            this.validationController.validate().then(function (validation) {
+                if (validation.valid) {
+                    setTimeout(function () {
+                        _this.success = true;
+                    }, 1000).then(function () {
+                        return _this.isWorking = false;
+                    });
+                } else {
+                    _this.isWorking = false;
+                }
+            });
+        };
+
+        return FrameUpdateDataForm;
+    }(), (_descriptor = _applyDecoratedDescriptor(_class2.prototype, 'frame', [_aureliaFramework.bindable], {
+        enumerable: true,
+        initializer: null
+    })), _class2)) || _class);
 });
 define('components/frame/frame-upload-form',['exports', 'aurelia-framework', 'aurelia-validation', '../../services/picture-service', '../../services/frame-service'], function (exports, _aureliaFramework, _aureliaValidation, _pictureService, _frameService) {
     'use strict';
@@ -5710,6 +5839,23 @@ define('components/user/user-list',['exports', 'aurelia-framework', '../../servi
         return UserList;
     }()) || _class);
 });
+define('components/user/user-login',["exports"], function (exports) {
+    "use strict";
+
+    Object.defineProperty(exports, "__esModule", {
+        value: true
+    });
+
+    function _classCallCheck(instance, Constructor) {
+        if (!(instance instanceof Constructor)) {
+            throw new TypeError("Cannot call a class as a function");
+        }
+    }
+
+    var UserLogin = exports.UserLogin = function UserLogin() {
+        _classCallCheck(this, UserLogin);
+    };
+});
 define('components/user/user-registration',['exports', 'aurelia-framework', 'aurelia-validation', '../../services/user-service'], function (exports, _aureliaFramework, _aureliaValidation, _userService) {
     'use strict';
 
@@ -5791,286 +5937,19 @@ define('components/user/user-registration',['exports', 'aurelia-framework', 'aur
         return UserRegistration;
     }()) || _class);
 });
-define('components/frame/frame-details',['exports', 'aurelia-framework'], function (exports, _aureliaFramework) {
-    'use strict';
-
-    Object.defineProperty(exports, "__esModule", {
-        value: true
-    });
-    exports.FrameDetails = undefined;
-
-    function _initDefineProp(target, property, descriptor, context) {
-        if (!descriptor) return;
-        Object.defineProperty(target, property, {
-            enumerable: descriptor.enumerable,
-            configurable: descriptor.configurable,
-            writable: descriptor.writable,
-            value: descriptor.initializer ? descriptor.initializer.call(context) : void 0
-        });
-    }
-
-    function _classCallCheck(instance, Constructor) {
-        if (!(instance instanceof Constructor)) {
-            throw new TypeError("Cannot call a class as a function");
-        }
-    }
-
-    function _applyDecoratedDescriptor(target, property, decorators, descriptor, context) {
-        var desc = {};
-        Object['ke' + 'ys'](descriptor).forEach(function (key) {
-            desc[key] = descriptor[key];
-        });
-        desc.enumerable = !!desc.enumerable;
-        desc.configurable = !!desc.configurable;
-
-        if ('value' in desc || desc.initializer) {
-            desc.writable = true;
-        }
-
-        desc = decorators.slice().reverse().reduce(function (desc, decorator) {
-            return decorator(target, property, desc) || desc;
-        }, desc);
-
-        if (context && desc.initializer !== void 0) {
-            desc.value = desc.initializer ? desc.initializer.call(context) : void 0;
-            desc.initializer = undefined;
-        }
-
-        if (desc.initializer === void 0) {
-            Object['define' + 'Property'](target, property, desc);
-            desc = null;
-        }
-
-        return desc;
-    }
-
-    function _initializerWarningHelper(descriptor, context) {
-        throw new Error('Decorating class property failed. Please ensure that transform-class-properties is enabled.');
-    }
-
-    var _desc, _value, _class, _descriptor;
-
-    var FrameDetails = exports.FrameDetails = (_class = function FrameDetails() {
-        _classCallCheck(this, FrameDetails);
-
-        _initDefineProp(this, 'frame', _descriptor, this);
-    }, (_descriptor = _applyDecoratedDescriptor(_class.prototype, 'frame', [_aureliaFramework.bindable], {
-        enumerable: true,
-        initializer: null
-    })), _class);
-});
-define('components/frame/frame-details-modal',['exports', 'aurelia-framework'], function (exports, _aureliaFramework) {
-    'use strict';
-
-    Object.defineProperty(exports, "__esModule", {
-        value: true
-    });
-    exports.FrameDetailsModal = undefined;
-
-    function _initDefineProp(target, property, descriptor, context) {
-        if (!descriptor) return;
-        Object.defineProperty(target, property, {
-            enumerable: descriptor.enumerable,
-            configurable: descriptor.configurable,
-            writable: descriptor.writable,
-            value: descriptor.initializer ? descriptor.initializer.call(context) : void 0
-        });
-    }
-
-    function _classCallCheck(instance, Constructor) {
-        if (!(instance instanceof Constructor)) {
-            throw new TypeError("Cannot call a class as a function");
-        }
-    }
-
-    function _applyDecoratedDescriptor(target, property, decorators, descriptor, context) {
-        var desc = {};
-        Object['ke' + 'ys'](descriptor).forEach(function (key) {
-            desc[key] = descriptor[key];
-        });
-        desc.enumerable = !!desc.enumerable;
-        desc.configurable = !!desc.configurable;
-
-        if ('value' in desc || desc.initializer) {
-            desc.writable = true;
-        }
-
-        desc = decorators.slice().reverse().reduce(function (desc, decorator) {
-            return decorator(target, property, desc) || desc;
-        }, desc);
-
-        if (context && desc.initializer !== void 0) {
-            desc.value = desc.initializer ? desc.initializer.call(context) : void 0;
-            desc.initializer = undefined;
-        }
-
-        if (desc.initializer === void 0) {
-            Object['define' + 'Property'](target, property, desc);
-            desc = null;
-        }
-
-        return desc;
-    }
-
-    function _initializerWarningHelper(descriptor, context) {
-        throw new Error('Decorating class property failed. Please ensure that transform-class-properties is enabled.');
-    }
-
-    var _desc, _value, _class, _descriptor;
-
-    var FrameDetailsModal = exports.FrameDetailsModal = (_class = function FrameDetailsModal() {
-        _classCallCheck(this, FrameDetailsModal);
-
-        _initDefineProp(this, 'frame', _descriptor, this);
-    }, (_descriptor = _applyDecoratedDescriptor(_class.prototype, 'frame', [_aureliaFramework.bindable], {
-        enumerable: true,
-        initializer: null
-    })), _class);
-});
-define('components/frame/frame-detail-modal',['exports', 'aurelia-framework'], function (exports, _aureliaFramework) {
-    'use strict';
-
-    Object.defineProperty(exports, "__esModule", {
-        value: true
-    });
-    exports.FrameDetailModal = undefined;
-
-    function _classCallCheck(instance, Constructor) {
-        if (!(instance instanceof Constructor)) {
-            throw new TypeError("Cannot call a class as a function");
-        }
-    }
-
-    var FrameDetailModal = exports.FrameDetailModal = function FrameDetailModal() {
-        _classCallCheck(this, FrameDetailModal);
-    };
-});
-define('components/frame/frame-update-data-form',['exports', 'aurelia-framework', 'aurelia-validation', '../../services/frame-service'], function (exports, _aureliaFramework, _aureliaValidation, _frameService) {
-    'use strict';
-
-    Object.defineProperty(exports, "__esModule", {
-        value: true
-    });
-    exports.FrameUpdateDataForm = undefined;
-
-    function _initDefineProp(target, property, descriptor, context) {
-        if (!descriptor) return;
-        Object.defineProperty(target, property, {
-            enumerable: descriptor.enumerable,
-            configurable: descriptor.configurable,
-            writable: descriptor.writable,
-            value: descriptor.initializer ? descriptor.initializer.call(context) : void 0
-        });
-    }
-
-    function _classCallCheck(instance, Constructor) {
-        if (!(instance instanceof Constructor)) {
-            throw new TypeError("Cannot call a class as a function");
-        }
-    }
-
-    function _applyDecoratedDescriptor(target, property, decorators, descriptor, context) {
-        var desc = {};
-        Object['ke' + 'ys'](descriptor).forEach(function (key) {
-            desc[key] = descriptor[key];
-        });
-        desc.enumerable = !!desc.enumerable;
-        desc.configurable = !!desc.configurable;
-
-        if ('value' in desc || desc.initializer) {
-            desc.writable = true;
-        }
-
-        desc = decorators.slice().reverse().reduce(function (desc, decorator) {
-            return decorator(target, property, desc) || desc;
-        }, desc);
-
-        if (context && desc.initializer !== void 0) {
-            desc.value = desc.initializer ? desc.initializer.call(context) : void 0;
-            desc.initializer = undefined;
-        }
-
-        if (desc.initializer === void 0) {
-            Object['define' + 'Property'](target, property, desc);
-            desc = null;
-        }
-
-        return desc;
-    }
-
-    function _initializerWarningHelper(descriptor, context) {
-        throw new Error('Decorating class property failed. Please ensure that transform-class-properties is enabled.');
-    }
-
-    var _dec, _class, _desc, _value, _class2, _descriptor;
-
-    var FrameUpdateDataForm = exports.FrameUpdateDataForm = (_dec = (0, _aureliaFramework.inject)(_frameService.FrameService, _aureliaFramework.NewInstance.of(_aureliaValidation.ValidationController)), _dec(_class = (_class2 = function () {
-        function FrameUpdateDataForm(frameService, validationController) {
-            _classCallCheck(this, FrameUpdateDataForm);
-
-            _initDefineProp(this, 'frame', _descriptor, this);
-
-            this.frameService = frameService;
-            this.validationController = validationController;
-            this.isWorking = false;
-            this.success = false;
-            this.serverError = {};
-        }
-
-        FrameUpdateDataForm.prototype.created = function created() {
-            this.validationController.validateTrigger = _aureliaValidation.validateTrigger.manual;
-
-            _aureliaValidation.ValidationRules.ensure("frame.name").required().withMessage("El nombre unico no puede estar vacio.").ensure("frame.description").required().withMessage("La descripcion no puede estar vacia.").ensure("frame.height").required().satisfies(function (value) {
-                return value > 0;
-            }).withMessage("El alto del marco no puede estar vacio o ser menor a 0.").ensure("frame.length").required().satisfies(function (value) {
-                return value > 0;
-            }).withMessage("El ancho del marco no puede estar vacio o ser menor a 0.").ensure("frame.prive").required().satisfies(function (value) {
-                return value > 0;
-            }).withMessage("El precio del marco no puede estar vacio o ser menor a 0.").on(this);
-        };
-
-        FrameUpdateDataForm.prototype.upload = function upload() {
-            var _this = this;
-
-            this.success = false;
-            this.isWorking = true;
-
-            console.log(this.imageFiles);
-
-            this.validationController.validate().then(function (validation) {
-                if (validation.valid) {
-                    setTimeout(function () {
-                        _this.success = true;
-                    }, 1000).then(function () {
-                        return _this.isWorking = false;
-                    });
-                } else {
-                    _this.isWorking = false;
-                }
-            });
-        };
-
-        return FrameUpdateDataForm;
-    }(), (_descriptor = _applyDecoratedDescriptor(_class2.prototype, 'frame', [_aureliaFramework.bindable], {
-        enumerable: true,
-        initializer: null
-    })), _class2)) || _class);
-});
 define('text!app.html', ['module'], function(module) { module.exports = "<template><require from=\"bootstrap/css/bootstrap.css\"></require><nav class=\"navbar navbar-default\"><div class=\"container-fluid\"><div class=\"navbar-header\"><button type=\"button\" class=\"navbar-toggle collapsed\" data-toggle=\"collapse\" data-target=\"#bs-example-navbar-collapse-1\" aria-expanded=\"false\"><span class=\"sr-only\">Toggle navigation</span> <span class=\"icon-bar\"></span> <span class=\"icon-bar\"></span> <span class=\"icon-bar\"></span></button> <a class=\"navbar-brand\" href=\"#\">WeFrame</a></div><div class=\"collapse navbar-collapse\" id=\"bs-example-navbar-collapse-1\"><ul class=\"nav navbar-nav\"><li class=\"active\"><a href=\"#\">Link <span class=\"sr-only\">(current)</span></a></li><li><a href=\"#\">Link</a></li><li class=\"dropdown\"><a href=\"#\" class=\"dropdown-toggle\" data-toggle=\"dropdown\" role=\"button\" aria-haspopup=\"true\" aria-expanded=\"false\">Admin <span class=\"caret\"></span></a><ul class=\"dropdown-menu\"><li><a route-href=\"route: index\">Galeria de marcos</a></li><li><a route-href=\"route: frame-admin-list\">Lista de marcos</a></li><li><a route-href=\"route: frame-admin\">Marcos</a></li><li role=\"separator\" class=\"divider\"></li><li><a route-href=\"route: user-admin-list\">Lista de usuarios</a></li></ul></li></ul></div></div></nav><router-view class=\"container\"></router-view></template>"; });
 define('text!layouts/frame-admin-panel-layout.html', ['module'], function(module) { module.exports = "<template><require from=\"../components/frame/frame-list\"></require><frame-list></frame-list><div class=\"row\"><div class=\"col-md-4 col-md-offset-4\"><div class=\"panel panel-default\"><div class=\"panel-heading\">Crear Marco</div><div class=\"panel-body\"><require from=\"../components/frame/frame-upload-form\"></require><frame-upload-form></frame-upload-form></div></div></div></div></template>"; });
+define('text!components/frame/frame-detail-modal.html', ['module'], function(module) { module.exports = "<template><div class=\"modal fade bs-example-modal-lg\" id=\"frameDetailModal\" tabindex=\"-1\" role=\"dialog\" aria-labelledby=\"frameDetailModal\"><div class=\"modal-dialog modal-lg\" role=\"document\"><div class=\"modal-content\"><div class=\"modal-header\"><button type=\"button\" class=\"close\" data-dismiss=\"modal\" aria-label=\"Close\"><span aria-hidden=\"true\">&times;</span></button><h4 class=\"modal-title\" id=\"myModalLabel\">Detalles - ${frame.uniqueName}</h4></div><div class=\"modal-body\"><div class=\"row\"><div class=\"col-md-12\"><img src=\"${frame.picture.imageUrl}\" class=\"col-md-12\"></div></div><hr><div class=\"row\"><div class=\"col-md-6\"><require from=\"./frame-update-data-form\"></require><frame-update-data-form frame.bind=\"frame\"></frame-update-data-form></div></div></div><div class=\"modal-footer\"></div></div></div></div></template>"; });
 define('text!components/frame/frame-gallery.html', ['module'], function(module) { module.exports = "<template><require from=\"./frame-thumbnail\"></require><div class=\"alert alert-danger\" if.bind=\"error.description\"><strong>${error.title}</strong> ${error.description}</div><div class=\"row col-md-10 col-md-offset-1\"><div class=\"col-md-3\" repeat.for=\"frame of frames\"><frame-thumbnail frame.bind=\"frame\"></frame-thumbnail></div></div></template>"; });
 define('text!components/frame/frame-list.html', ['module'], function(module) { module.exports = "<template><div class=\"row\"><div class=\"col-md-8 col-md-offset-2\"><div class=\"alert alert-danger\" if.bind=\"error.description\"><strong>${error.title}</strong> ${error.description}</div></div></div><div class=\"row\"><div class=\"col-md-10 col-md-offset-1\"><table class=\"table table-bordered\" if.bind=\"frames\"><tr><th>ID</th><th>Nombre unico</th><th>Nombre</th><th>Descripcion</th><th>Alto</th><th>Ancho</th><th>Imagen (nombre unico)</th><th>Precio</th><th>Acciones</th></tr><tr repeat.for=\"frame of frames\"><td>${frame.id}</td><td>${frame.uniqueName}</td><td>${frame.name}</td><td>${frame.description}</td><td>${frame.height}</td><td>${frame.length}</td><td>${frame.picture.imageKey}</td><td>${frame.price}</td><td><button type=\"button\" class=\"btn btn-primary\" data-toggle=\"modal\" data-target=\"#frameDetailModal\" click.delegate=\"showDetails(frame.id)\"><i class=\"fa fa-info\" aria-hidden=\"true\"></i> Detalles</button> <button type=\"button\" class=\"btn btn-danger\"><i class=\"fa fa-times\" aria-hidden=\"true\"></i> Eliminar</button></td></tr></table></div></div><require from=\"./frame-detail-modal\"></require><frame-detail-modal view-model.ref=\"frameDetailsViewModel\"></frame-detail-modal></template>"; });
 define('text!components/frame/frame-thumbnail.html', ['module'], function(module) { module.exports = "<template><div class=\"thumbnail\"><img src=\"${frame.picture.imageUrl}\" load.trigger=\"setHasLoaded()\"><div class=\"caption\"><h3>${frame.name}</h3><p>${frame.description}</p><p>Alto: ${frame.height} cm.</p><p>Ancho: ${frame.length} cm.</p><p><a href=\"#\" class=\"btn btn-primary\" role=\"button\">$ ${frame.price} - Personalizar</a></p></div></div></template>"; });
+define('text!components/frame/frame-update-data-form.html', ['module'], function(module) { module.exports = "<template><form role=\"form\" submit.delegate=\"update()\"><div class=\"form-group\"><label for=\"name\">Nombre:</label><input type=\"text\" class=\"form-control\" value.bind=\"frame.name & validate\"></div><div class=\"form-group\"><label for=\"description\">Descripcion:</label><textarea class=\"form-control\" name=\"description\" cols=\"100\" rows=\"5\" value.bind=\"frame.description\"></textarea></div><div class=\"form-group\"><label for=\"height\">Alto:</label><input type=\"number\" class=\"form-control\" value.bind=\"frame.height & validate\"></div><div class=\"form-group\"><label for=\"length\">Ancho:</label><input type=\"number\" class=\"form-control\" value.bind=\"frame.length & validate\"></div><div class=\"form-group\"><label for=\"price\">Precio:</label><input type=\"number\" class=\"form-control\" value.bind=\"frame.price & validate\"></div><div class=\"form-group\"><div class=\"alert alert-warning\" repeat.for=\"error of validationController.errors\">${error.message}</div><div class=\"alert alert-danger\" if.bind=\"serverError.title\"><strong>${serverError.title}</strong> ${serverError.description}</div><div class=\"alert alert-success\" if.bind=\"success\"><strong>Exito!</strong> La imagen se subio correctamente.</div></div><button type=\"submit\" class=\"btn btn-primary\" if.bind=\"!isWorking\">Subir</button> <button type=\"reset\" class=\"btn btn-default\">Limpiar</button> <button type=\"button\" class=\"btn btn-primary disabled\" if.bind=\"isWorking\"><i class=\"fa fa-spinner fa-spin\"></i> Subiendo...</button></form></template>"; });
+define('text!components/frame/frame-update-picture-form.html', ['module'], function(module) { module.exports = ""; });
 define('text!components/frame/frame-upload-form.html', ['module'], function(module) { module.exports = "<template><form role=\"form\" submit.delegate=\"upload()\"><div class=\"form-group\"><label for=\"name\">Nombre:</label><input type=\"text\" class=\"form-control\" value.bind=\"name & validate\"></div><div class=\"form-group\"><label for=\"uniqueName\">Nombre unico:</label><input type=\"text\" class=\"form-control\" value.bind=\"uniqueName & validate\"></div><div class=\"form-group\"><label for=\"description\">Descripcion:</label><textarea class=\"form-control\" name=\"description\" cols=\"100\" rows=\"5\" value.bind=\"description\"></textarea></div><div class=\"form-group\"><label for=\"height\">Alto:</label><input type=\"number\" class=\"form-control\" value.bind=\"height & validate\"></div><div class=\"form-group\"><label for=\"width\">Ancho:</label><input type=\"number\" class=\"form-control\" value.bind=\"width & validate\"></div><div class=\"form-group\"><label for=\"price\">Precio:</label><input type=\"number\" class=\"form-control\" value.bind=\"price & validate\"></div><div class=\"form-group\"><label for=\"imageFile\">Imagen:</label><input type=\"file\" class=\"form-control\" files.bind=\"imageFiles & validate\" accept=\".jpg,.jpeg,.png\"></div><div class=\"form-group\"><label for=\"imageUniqueName\">Nombre unico de imagen:</label><input type=\"text\" class=\"form-control\" value.bind=\"imageUniqueName & validate\"></div><div class=\"form-group\"><label for=\"imageFormatName\">Formato de imagen:</label><input type=\"text\" class=\"form-control\" value.bind=\"imageFormatName & validate\" placeholder=\"ej: jpg\"></div><div class=\"form-group\"><div class=\"alert alert-warning\" repeat.for=\"error of validationController.errors\">${error.message}</div><div class=\"alert alert-danger\" if.bind=\"serverError.title\"><strong>${serverError.title}</strong> ${serverError.description}</div><div class=\"alert alert-success\" if.bind=\"success\"><strong>Exito!</strong> La imagen se subio correctamente.</div></div><button type=\"submit\" class=\"btn btn-primary\" if.bind=\"!isWorking\">Subir</button> <button type=\"reset\" class=\"btn btn-default\">Limpiar</button> <button type=\"button\" class=\"btn btn-primary disabled\" if.bind=\"isWorking\"><i class=\"fa fa-spinner fa-spin\"></i> Subiendo...</button></form></template>"; });
 define('text!components/picture/canvas-test.html', ['module'], function(module) { module.exports = "<template><input id=\"ANGLE\" type=\"range\" min=\"-1\" max=\"1\" value=\"0\" step=\"0.05\" value.bind=\"rangeVal\" click.delegate=\"showVal()\"><br><canvas ref=\"canvas\" id=\"canvas\" width=\"600\" height=\"800\" style=\"border:1px solid red\"></canvas></template>"; });
 define('text!components/picture/picture-test.html', ['module'], function(module) { module.exports = "<template><button type=\"button\" click.delegate=\"test()\">Test</button><div id=\"myCanvas\" style=\"background:gray;width:960px;height:540px\"><img src=\"${pictureUrl}\" if.bind=\"isLoaded\" id=\"dragTest\"></div></template>"; });
 define('text!components/picture/picture-upload.html', ['module'], function(module) { module.exports = "<template><form submit.delegate=\"doUpload()\"><input id=\"files\" type=\"file\" accept=\".jpg,.jpeg,.png\" files.bind=\"selectedFiles\" class=\"form-control\"> <input type=\"submit\" class=\"btn btn-primary\" value=\"Upload\" if.bind=\"selectedFiles.length > 0\"></form></template>"; });
 define('text!components/user/user-list.html', ['module'], function(module) { module.exports = "<template><div class=\"row\"><div class=\"col-md-8 col-md-offset-2\"><div class=\"alert alert-danger\" if.bind=\"error.description\"><strong>${error.title}</strong> ${error.description}</div></div></div><div class=\"row\"><div class=\"col-md-10 col-md-offset-1\"><table class=\"table table-bordered\" if.bind=\"users\"><tr><th>ID</th><th>Nombre</th><th>Apellido</th><th>Email</th><th>Rol</th><th>Estado</th></tr><tr repeat.for=\"user of users\"><td>${user.id}</td><td>${user.firstName}</td><td>${user.lastName}</td><td>${user.email}</td><td>${user.role.name}</td><td>${user.state.name}</td></tr></table></div></div></template>"; });
+define('text!components/user/user-login.html', ['module'], function(module) { module.exports = "<template><a href=\"localhost:8080/auth/facebook\"><button>Login with facebook</button></a></template>"; });
 define('text!components/user/user-registration.html', ['module'], function(module) { module.exports = "<template><form role=\"form\" submit.delegate=\"register()\"><div class=\"form-group\"><label for=\"firstName\">Nombre:</label><input type=\"text\" class=\"form-control\" value.bind=\"firstName & validate\" placeholder=\"ej: Juan\"></div><div class=\"form-group\"><label for=\"lastName\">Apellido:</label><input type=\"text\" class=\"form-control\" value.bind=\"lastName & validate\" placeholder=\"ej: Perez\"></div><div class=\"form-group\"><label for=\"email\">Email:</label><input type=\"email\" class=\"form-control\" value.bind=\"email & validate\" placeholder=\"ej: juan.perez@email.com\"></div><div class=\"form-group\"><label for=\"password\">Contraseña:</label><input type=\"password\" class=\"form-control\" value.bind=\"password & validate\"></div><div class=\"form-group\"><div class=\"alert alert-warning\" repeat.for=\"error of validationController.errors\">${error.message}</div><div class=\"alert alert-danger\" if.bind=\"serverError.title\"><strong>${serverError.title}</strong> ${serverError.description}</div><div class=\"alert alert-success\" if.bind=\"success\"><strong>Exito!</strong> El usuario fue registrado correctamente.</div></div><button type=\"submit\" class=\"btn btn-primary\" if.bind=\"!isWorking\">Registrar</button> <button type=\"submit\" class=\"btn btn-primary disabled\" if.bind=\"isWorking\"><i class=\"fa fa-spinner fa-spin\"></i> Enviando...</button></form></template>"; });
-define('text!components/frame/frame-details.html', ['module'], function(module) { module.exports = "<template></template>"; });
-define('text!components/frame/frame-details-modal.html', ['module'], function(module) { module.exports = "<template><div class=\"modal fade bs-example-modal-lg\" id=\"frameDetailModal\" tabindex=\"-1\" role=\"dialog\" aria-labelledby=\"frameDetailModal\"><div class=\"modal-dialog modal-lg\" role=\"document\"><div class=\"modal-content\"><div class=\"modal-header\"><button type=\"button\" class=\"close\" data-dismiss=\"modal\" aria-label=\"Close\"><span aria-hidden=\"true\">&times;</span></button><h4 class=\"modal-title\" id=\"myModalLabel\">Detalles - ${frame.uniqueName}</h4></div><div class=\"modal-body\"></div><div class=\"modal-footer\"><button type=\"button\" class=\"btn btn-default\" data-dismiss=\"modal\">Close</button> <button type=\"button\" class=\"btn btn-primary\">Save changes</button></div></div></div></div></template>"; });
-define('text!components/frame/frame-detail-modal.html', ['module'], function(module) { module.exports = "<template><div class=\"modal fade bs-example-modal-lg\" id=\"frameDetailModal\" tabindex=\"-1\" role=\"dialog\" aria-labelledby=\"frameDetailModal\"><div class=\"modal-dialog modal-lg\" role=\"document\"><div class=\"modal-content\"><div class=\"modal-header\"><button type=\"button\" class=\"close\" data-dismiss=\"modal\" aria-label=\"Close\"><span aria-hidden=\"true\">&times;</span></button><h4 class=\"modal-title\" id=\"myModalLabel\">Detalles - ${frame.uniqueName}</h4></div><div class=\"modal-body\"><div class=\"row\"><div class=\"col-md-12\"><img src=\"${frame.picture.imageUrl}\" class=\"col-md-12\"></div></div><hr><div class=\"row\"><div class=\"col-md-6\"><require from=\"./frame-update-data-form\"></require><frame-update-data-form frame.bind=\"frame\"></frame-update-data-form></div></div></div><div class=\"modal-footer\"></div></div></div></div></template>"; });
-define('text!components/frame/frame-data-update-form.html', ['module'], function(module) { module.exports = ""; });
-define('text!components/frame/frame-update-picture-form.html', ['module'], function(module) { module.exports = ""; });
-define('text!components/frame/frame-update-data-form.html', ['module'], function(module) { module.exports = "<template><form role=\"form\" submit.delegate=\"update()\"><div class=\"form-group\"><label for=\"name\">Nombre:</label><input type=\"text\" class=\"form-control\" value.bind=\"frame.name & validate\"></div><div class=\"form-group\"><label for=\"description\">Descripcion:</label><textarea class=\"form-control\" name=\"description\" cols=\"100\" rows=\"5\" value.bind=\"frame.description\"></textarea></div><div class=\"form-group\"><label for=\"height\">Alto:</label><input type=\"number\" class=\"form-control\" value.bind=\"frame.height & validate\"></div><div class=\"form-group\"><label for=\"length\">Ancho:</label><input type=\"number\" class=\"form-control\" value.bind=\"frame.length & validate\"></div><div class=\"form-group\"><label for=\"price\">Precio:</label><input type=\"number\" class=\"form-control\" value.bind=\"frame.price & validate\"></div><div class=\"form-group\"><div class=\"alert alert-warning\" repeat.for=\"error of validationController.errors\">${error.message}</div><div class=\"alert alert-danger\" if.bind=\"serverError.title\"><strong>${serverError.title}</strong> ${serverError.description}</div><div class=\"alert alert-success\" if.bind=\"success\"><strong>Exito!</strong> La imagen se subio correctamente.</div></div><button type=\"submit\" class=\"btn btn-primary\" if.bind=\"!isWorking\">Subir</button> <button type=\"reset\" class=\"btn btn-default\">Limpiar</button> <button type=\"button\" class=\"btn btn-primary disabled\" if.bind=\"isWorking\"><i class=\"fa fa-spinner fa-spin\"></i> Subiendo...</button></form></template>"; });
 //# sourceMappingURL=app-bundle.js.map
