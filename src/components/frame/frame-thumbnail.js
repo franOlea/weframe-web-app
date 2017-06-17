@@ -14,4 +14,8 @@ export class FrameThumbnail {
         
     }
 
+    setHasLoaded() {
+        this.hasLoaded = true;
+    }
+
 }

@@ -1,5 +1,5 @@
 <template>
-    <div class="thumbnail">
+    <div class="thumbnail ${hasLoaded ? 'show' : 'hidden'}" style="border: 0 none; box-shadow: none;">
         <img src="${frame.picture.imageUrl}" load.trigger="setHasLoaded()">
         <div class="caption">
             <h3>${frame.name}</h3>

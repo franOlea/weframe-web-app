@@ -1,36 +1,26 @@
 <template>
-
-    <!--<script>
-        window.fbAsyncInit = function () {
-            FB.init({
-                appId: '1417159141654187',
-                cookie: true,
-                xfbml: true,
-                version: 'v2.8'
-            });
-            FB.AppEvents.logPageView();
-        };
-
-        (function (d, s, id) {
-            var js, fjs = d.getElementsByTagName(s)[0];
-            if (d.getElementById(id)) { return; }
-            js = d.createElement(s); js.id = id;
-            js.src = "//connect.facebook.net/en_US/sdk.js";
-            fjs.parentNode.insertBefore(js, fjs);
-        }(document, 'script', 'facebook-jssdk'));
-
-
-        function checkLoginState() {
-            FB.getLoginStatus(function (response) {
-                console.log(response);
-                statusChangeCallback(response);
-            });
-        }
-    </script>
-
-
-    <fb:login-button scope="public_profile, email" onlogin="checkLoginState();">
-    </fb:login-button>-->
-    <a href="localhost:8080/auth/facebook"><button>Login with facebook</button></a>
-
+    <form role="form" submit.delegate="login()">
+        <div class="form-group">
+            <label for="email">Email:</label>
+            <input type="email" class="form-control" value.bind="email & validate" placeholder="ej: juan.perez@email.com">
+        </div>
+        <div class="form-group">
+            <label for="password">Contraseña:</label>
+            <input type="password" class="form-control" value.bind="password & validate" >
+        </div>
+        <div class="form-group">
+            <div class="alert alert-warning" repeat.for="error of validationController.errors">
+                <!--<strong>${error.title}</strong> ${error.description}-->
+                ${error.message}
+            </div>
+            <div class="alert alert-danger" if.bind="serverError.title">
+                <strong>${serverError.title}</strong> ${serverError.description}
+            </div>
+            <div class="alert alert-success" if.bind="success">
+                <strong>Exito!</strong> El usuario fue registrado correctamente.
+            </div>
+        </div>
+        <button type="submit" class="btn btn-primary btn-lg btn-block" if.bind="!isWorking">Ingresar</button>
+        <button type="submit" class="btn btn-primary btn-lg btn-block disabled" if.bind="isWorking"><i class="fa fa-spinner fa-spin"></i> Ingresando...</button>
+    </form>
 </template>

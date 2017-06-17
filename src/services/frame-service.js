@@ -30,4 +30,12 @@ export class FrameService {
                 .withTimeout(3000)
                 .send()
     }
+
+    deleteFrame(id) {
+        return this.restClient.createRequest(environment.webApiFramesPath)
+                .asDelete()
+                .withBaseUrl(environment.webApiUrl)
+                .withTimeout(3000)
+                .send();
+    }
 }

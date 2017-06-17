@@ -8,6 +8,7 @@ export class FrameGallery {
         this.frameService = frameService;
         this.pictureService = pictureService;
         this.frames = [];
+        this.framesPerRow = 6;
         this.error = {};
         this.isWorking = false;
     }
@@ -20,7 +21,8 @@ export class FrameGallery {
         this.isWorking = true;
         this.frameService.getFrames(page, size).then(
             frameResponse => {
-                this.frames = JSON.parse(frameResponse.response);
+                this.frames = this.frames.concat(JSON.parse(frameResponse.response));
+                this.frameRows = Math.ceil(this.frames.length / this.framesPerRow);
                 this.frames.forEach((frame) => {
                     this.pictureService.getPicture(frame.picture.imageKey, false).then(
                         (pictureResponse) => {

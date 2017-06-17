@@ -1,0 +1,54 @@
+<template>
+	<nav class="navbar navbar-default">
+		<div class="container-fluid">
+			<div class="navbar-header">
+				<button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1"
+				 aria-expanded="false">
+				<span class="sr-only">Toggle navigation</span>
+				<span class="icon-bar"></span>
+				<span class="icon-bar"></span>
+				<span class="icon-bar"></span>
+      			</button>
+				<a class="navbar-brand" href="#">WeFrame</a>
+			</div>
+
+			<div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+				<ul class="nav navbar-nav">
+					<li class="active"><a href="#">Link <span class="sr-only">(current)</span></a></li>
+					<li><a href="#">Link</a></li>
+					<li class="dropdown">
+						<a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Admin <span class="caret"></span></a>
+						<ul class="dropdown-menu">
+							<li><a route-href="route: index">Galeria de marcos</a></li>
+							<li><a route-href="route: frame-admin-list">Lista de marcos</a></li>
+							<li><a route-href="route: frame-admin">Marcos</a></li>
+							<li role="separator" class="divider"></li>
+							<li><a route-href="route: user-admin-list">Lista de usuarios</a></li>
+						</ul>
+					</li>
+				</ul>
+
+				<ul class="nav navbar-nav navbar-right">
+					<li>
+                        <button type="button" 
+                                class="btn btn-primary navbar-btn" 
+                                data-toggle="modal" 
+                                data-target="#userLoginModal">Ingresar</button>
+                    </li>
+					<li><p class="navbar-text"></p></li>
+					<li>
+                        <button type="button" 
+                                class="btn btn-success navbar-btn"
+                                data-toggle="modal"
+                                data-target="#userRegistrationModal">Registrarse</button>
+                    </li>
+				</ul>
+			</div>
+		</div>
+	</nav>
+
+    <require from="./login-modal"></require>
+    <login-modal></login-modal>
+    <require from="./registration-modal"></require>
+    <registration-modal></registration-modal>
+</template>
