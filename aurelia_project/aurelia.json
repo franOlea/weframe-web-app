@@ -151,6 +151,11 @@
             "name": "aurelia-validation",
             "path": "../node_modules/aurelia-validation/dist/amd",
             "main": "aurelia-validation"
+          },
+          {
+            "name": "auth0-js",
+            "path": "../node_modules/auth0-js/build",
+            "main": "auth0"
           }
         ]
       }

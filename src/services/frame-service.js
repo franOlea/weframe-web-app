@@ -1,41 +1,45 @@
-import {HttpClient} from 'aurelia-http-client';
+import {inject} from 'aurelia-framework';
+import {RestService} from './rest-service';
 import environment from '../environment';
 
+@inject(RestService)
 export class FrameService {
-    constructor() {
-        this.restClient = new HttpClient();
+    constructor(restService) {
+        this.restService = restService;
     }
 
-    getFrames(pageNumber, pageSize) {
-        return this.restClient.createRequest(environment.webApiFramesPath)
+    getFrames(pageNumber, pageSize, timeout = 5000) {
+        return this.restService.getClient()
+                .createRequest(environment.webApiFramesPath)
+                .withHeader('page', pageNumber)
+                .withHeader('size', pageSize)
                 .asGet()
-                .withBaseUrl(environment.webApiUrl)
-                .withTimeout(5000)
+                .withTimeout(timeout)
                 .send()
     }
 
-    getFrame(id) {
-        return this.restClient.createRequest(environment.webApiFramesPath + `/${id}`)
+    getFrame(id, timeout = 2000) {
+        return this.restService.getClient()
+                .createRequest(environment.webApiFramesPath + `/${id}`)
                 .asGet()
-                .withBaseUrl(environment.webApiUrl)
-                .withTimeout(2000)
+                .withTimeout(timeout)
                 .send()
     }
 
-    postFrame(frame) {
-        return this.restClient.createRequest(environment.webApiFramesPath)
+    postFrame(frame, timeout = 3000) {
+        return this.restService.getClient()
+                .createRequest(environment.webApiFramesPath)
                 .asPost()
-                .withBaseUrl(environment.webApiUrl)
                 .withContent(frame)
-                .withTimeout(3000)
+                .withTimeout(timeout)
                 .send()
     }
 
-    deleteFrame(id) {
-        return this.restClient.createRequest(environment.webApiFramesPath)
+    deleteFrame(id, timeout = 3000) {
+        return this.restService.getClient()
+                .createRequest(environment.webApiFramesPath + `/${id}`)
                 .asDelete()
-                .withBaseUrl(environment.webApiUrl)
-                .withTimeout(3000)
+                .withTimeout(timeout)
                 .send();
     }
 }

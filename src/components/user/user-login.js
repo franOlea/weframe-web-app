@@ -1,15 +1,15 @@
 import {inject, NewInstance} from 'aurelia-framework';
 import {ValidationController, validateTrigger, ValidationRules} from 'aurelia-validation';
-import {UserService} from '../../services/user-service';
+import {SessionService} from '../../services/session-service';
 
-@inject(UserService,NewInstance.of(ValidationController))
+@inject(SessionService,NewInstance.of(ValidationController))
 export class UserLogin {
     
     email = '';
     password = '';
 
-    constructor(userService, validationController) {
-        this.userService = userService;
+    constructor(sessionService, validationController) {
+        this.sessionService = sessionService;
         this.validationController = validationController;
         this.isWorking = false;
         this.success = false;
@@ -34,13 +34,24 @@ export class UserLogin {
             password: this.password
         }
 
-        setTimeout(() => {
-            this.validationController.validate()
-                .then((validation) => {
-                    if(validation.valid) {
-                        this.success = true;
-                    }
-                }).then(() => this.isWorking = false);
-        }, 1000);
+        this.sessionService.login(userCredentials).then(
+            success => {
+                console.log("LOGIN SUCCESS");
+                console.log(success);
+            },
+            failue => {
+                console.log("LOGIN FAIL");
+                console.log(failure);
+            }
+        )
+
+        // setTimeout(() => {
+        //     this.validationController.validate()
+        //         .then((validation) => {
+        //             if(validation.valid) {
+        //                 this.success = true;
+        //             }
+        //         }).then(() => this.isWorking = false);
+        // }, 1000);
     }
 }

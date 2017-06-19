@@ -14,6 +14,7 @@
     "aurelia-interactjs": "^2.0.7",
     "aurelia-validatejs": "^0.7.0",
     "aurelia-validation": "^1.0.0",
+    "auth0-js": "^8.7.0",
     "bluebird": "^3.4.1",
     "bootstrap": "^3.3.7",
     "font-awesome": "^4.7.0",

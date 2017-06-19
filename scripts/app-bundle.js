@@ -1,9 +1,10 @@
-define('app',['exports'], function (exports) {
+define('app',['exports', 'aurelia-framework', './services/auth-service'], function (exports, _aureliaFramework, _authService) {
 	'use strict';
 
 	Object.defineProperty(exports, "__esModule", {
 		value: true
 	});
+	exports.App = undefined;
 
 	function _classCallCheck(instance, Constructor) {
 		if (!(instance instanceof Constructor)) {
@@ -11,11 +12,9 @@ define('app',['exports'], function (exports) {
 		}
 	}
 
-	var App = exports.App = function () {
-		function App() {
-			_classCallCheck(this, App);
-		}
+	var _dec, _class;
 
+	var App = exports.App = (_dec = (0, _aureliaFramework.inject)(_authService.AuthService), _dec(_class = function () {
 		App.prototype.configureRouter = function configureRouter(config, router) {
 			config.title = 'WeFrame';
 			config.map([{
@@ -38,13 +37,39 @@ define('app',['exports'], function (exports) {
 				moduleId: './components/user/user-list',
 				title: 'Panel de administrador',
 				name: 'user-admin-list'
+			}, {
+				route: 'callback',
+				name: 'callback',
+				moduleId: './components/callback',
+				nav: false,
+				title: 'Callback'
 			}]);
 
 			this.router = router;
 		};
 
+		function App(authService) {
+			var _this = this;
+
+			_classCallCheck(this, App);
+
+			this.authService = authService;
+			this.authenticated = this.authService.isAuthenticated();
+			this.authService.authNotifier.subscribe('authChange', function (authState) {
+				_this.authenticated = authState.authenticated;
+			});
+		}
+
+		App.prototype.login = function login() {
+			this.authService.login();
+		};
+
+		App.prototype.logout = function logout() {
+			this.authService.logout();
+		};
+
 		return App;
-	}();
+	}()) || _class);
 });
 define('environment',['exports'], function (exports) {
   'use strict';
@@ -55,7 +80,8 @@ define('environment',['exports'], function (exports) {
   exports.default = {
     debug: true,
     testing: true,
-    webApiUrl: 'http://weframers-franolea.rhcloud.com',
+
+    webApiUrl: 'http://localhost:8080',
     webApiUsersPath: 'users',
     webApiPicturesPath: 'pictures',
     webApiFramesPath: 'frames'
@@ -119,7 +145,89 @@ define('resources/index',["exports"], function (exports) {
   exports.configure = configure;
   function configure(config) {}
 });
-define('services/frame-service',['exports', 'aurelia-http-client', '../environment'], function (exports, _aureliaHttpClient, _environment) {
+define('services/auth-service',['exports', 'auth0-js', 'aurelia-framework', 'aurelia-router', 'aurelia-event-aggregator'], function (exports, _auth0Js, _aureliaFramework, _aureliaRouter, _aureliaEventAggregator) {
+    'use strict';
+
+    Object.defineProperty(exports, "__esModule", {
+        value: true
+    });
+    exports.AuthService = undefined;
+
+    var _auth0Js2 = _interopRequireDefault(_auth0Js);
+
+    function _interopRequireDefault(obj) {
+        return obj && obj.__esModule ? obj : {
+            default: obj
+        };
+    }
+
+    function _classCallCheck(instance, Constructor) {
+        if (!(instance instanceof Constructor)) {
+            throw new TypeError("Cannot call a class as a function");
+        }
+    }
+
+    var _dec, _class;
+
+    var AuthService = exports.AuthService = (_dec = (0, _aureliaFramework.inject)(_aureliaRouter.Router), _dec(_class = function () {
+        function AuthService(Router) {
+            _classCallCheck(this, AuthService);
+
+            this.auth0 = new _auth0Js2.default.WebAuth({
+                domain: 'weframe.auth0.com',
+                clientID: '7DJzxL1JidZ8QNiGDt8d05183roJGIfJ',
+                redirectUri: 'http://localhost:9000/callback',
+                audience: 'https://weframe.auth0.com/userinfo',
+                responseType: 'token id_token',
+                scope: 'openid'
+            });
+            this.authNotifier = new _aureliaEventAggregator.EventAggregator();
+
+            this.router = Router;
+        }
+
+        AuthService.prototype.login = function login() {
+            this.auth0.authorize();
+        };
+
+        AuthService.prototype.handleAuthentication = function handleAuthentication() {
+            var _this = this;
+
+            this.auth0.parseHash(function (err, authResult) {
+                if (authResult && authResult.accessToken && authResult.idToken) {
+                    _this.setSession(authResult);
+                    _this.router.navigate('home');
+                    _this.authNotifier.publish('authChange', { authenticated: true });
+                } else if (err) {
+                    console.log(err);
+                }
+            });
+        };
+
+        AuthService.prototype.setSession = function setSession(authResult) {
+            var expiresAt = JSON.stringify(authResult.expiresIn * 1000 + new Date().getTime());
+            localStorage.setItem('access_token', authResult.accessToken);
+            localStorage.setItem('id_token', authResult.idToken);
+            localStorage.setItem('expires_at', expiresAt);
+        };
+
+        AuthService.prototype.logout = function logout() {
+            localStorage.removeItem('access_token');
+            localStorage.removeItem('id_token');
+            localStorage.removeItem('expires_at');
+            this.router.navigate('home');
+            this.authNotifier.publish('authChange', false);
+        };
+
+        AuthService.prototype.isAuthenticated = function isAuthenticated() {
+            var expiresAt = JSON.parse(localStorage.getItem('expires_at'));
+            return new Date().getTime() < expiresAt;
+        };
+
+        return AuthService;
+    }()) || _class);
+});
+define('services/frame-service',['exports', 'aurelia-framework', './rest-service', '../environment'], function (exports, _aureliaFramework, _restService, _environment) {
     'use strict';
 
     Object.defineProperty(exports, "__esModule", {
@@ -141,31 +249,41 @@ define('services/frame-service',['exports', 'aurelia-http-client', '../environme
         }
     }
 
-    var FrameService = exports.FrameService = function () {
-        function FrameService() {
+    var _dec, _class;
+
+    var FrameService = exports.FrameService = (_dec = (0, _aureliaFramework.inject)(_restService.RestService), _dec(_class = function () {
+        function FrameService(restService) {
             _classCallCheck(this, FrameService);
 
-            this.restClient = new _aureliaHttpClient.HttpClient();
+            this.restService = restService;
         }
 
         FrameService.prototype.getFrames = function getFrames(pageNumber, pageSize) {
-            return this.restClient.createRequest(_environment2.default.webApiFramesPath).asGet().withBaseUrl(_environment2.default.webApiUrl).withTimeout(5000).send();
+            var timeout = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 5000;
+
+            return this.restService.getClient().createRequest(_environment2.default.webApiFramesPath).withHeader('page', pageNumber).withHeader('size', pageSize).asGet().withTimeout(timeout).send();
         };
 
         FrameService.prototype.getFrame = function getFrame(id) {
-            return this.restClient.createRequest(_environment2.default.webApiFramesPath + ('/' + id)).asGet().withBaseUrl(_environment2.default.webApiUrl).withTimeout(2000).send();
+            var timeout = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 2000;
+
+            return this.restService.getClient().createRequest(_environment2.default.webApiFramesPath + ('/' + id)).asGet().withTimeout(timeout).send();
         };
 
         FrameService.prototype.postFrame = function postFrame(frame) {
-            return this.restClient.createRequest(_environment2.default.webApiFramesPath).asPost().withBaseUrl(_environment2.default.webApiUrl).withContent(frame).withTimeout(3000).send();
+            var timeout = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 3000;
+
+            return this.restService.getClient().createRequest(_environment2.default.webApiFramesPath).asPost().withContent(frame).withTimeout(timeout).send();
         };
 
         FrameService.prototype.deleteFrame = function deleteFrame(id) {
-            return this.restClient.createRequest(_environment2.default.webApiFramesPath).asDelete().withBaseUrl(_environment2.default.webApiUrl).withTimeout(3000).send();
+            var timeout = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 3000;
+
+            return this.restService.getClient().createRequest(_environment2.default.webApiFramesPath + ('/' + id)).asDelete().withTimeout(timeout).send();
         };
 
         return FrameService;
-    }();
+    }()) || _class);
 });
 define('services/picture-service',['exports', 'aurelia-http-client', '../environment'], function (exports, _aureliaHttpClient, _environment) {
     'use strict';
@@ -254,8 +372,75 @@ define('services/rest-service',['exports', 'aurelia-http-client', '../environmen
             });
         };
 
+        RestService.prototype.getClient = function getClient() {
+            return this.httpClient;
+        };
+
         return RestService;
     }();
+});
+define('services/session-service',['exports', 'aurelia-framework', './rest-service', '../environment'], function (exports, _aureliaFramework, _restService, _environment) {
+    'use strict';
+
+    Object.defineProperty(exports, "__esModule", {
+        value: true
+    });
+    exports.SessionService = undefined;
+
+    var _environment2 = _interopRequireDefault(_environment);
+
+    function _interopRequireDefault(obj) {
+        return obj && obj.__esModule ? obj : {
+            default: obj
+        };
+    }
+
+    function _classCallCheck(instance, Constructor) {
+        if (!(instance instanceof Constructor)) {
+            throw new TypeError("Cannot call a class as a function");
+        }
+    }
+
+    var _dec, _class;
+
+    var SessionService = exports.SessionService = (_dec = (0, _aureliaFramework.inject)(_restService.RestService), _dec(_class = function () {
+        function SessionService(restService) {
+            _classCallCheck(this, SessionService);
+
+            this.restService = restService;
+        }
+
+        SessionService.prototype.setCookie = function setCookie(cookieName, cookieValue, expirationDays) {
+            var date = new Date();
+            date.setDate(date.getDate() + expirationDays * 24 * 60 * 60 * 1000);
+            var expires = "expires=" + date.toUTCString();
+            document.cookie = cookieName + "=" + cookieValue + ";" + expires + ";path=/";
+        };
+
+        SessionService.prototype.getCookie = function getCookie(cookieName) {
+            var nameEQ = cookieName + "=";
+            var ca = document.cookie.split(';');
+            for (var i = 0; i < ca.length; i++) {
+                var c = ca[i];
+                while (c.charAt(0) == ' ') {
+                    c = c.substring(1, c.length);
+                }if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length, c.length);
+            }
+            return null;
+        };
+
+        SessionService.prototype.login = function login(userCredentials) {
+            return this.restService.getClient().createRequest('login').asPost().withContent(userCredentials).withTimeout(3000).send().then(function (success) {
+                console.log("SESSION SERVICE SUCCESS");
+                console.log(success);
+            }, function (failue) {
+                console.log("SESSION SERVICE FAIL");
+                console.log(failure);
+            });
+        };
+
+        return SessionService;
+    }()) || _class);
 });
 define('services/user-service',['exports', 'aurelia-http-client', '../environment'], function (exports, _aureliaHttpClient, _environment) {
     'use strict';
@@ -362,7 +547,7 @@ define('components/frame/frame-gallery',['exports', 'aurelia-framework', '../../
         }
 
         FrameGallery.prototype.created = function created() {
-            this.updateFrameList(0, 10);
+            this.updateFrameList(1, 10);
         };
 
         FrameGallery.prototype.updateFrameList = function updateFrameList(page, size) {
@@ -5889,7 +6074,7 @@ define('components/user/user-list',['exports', 'aurelia-framework', '../../servi
         return UserList;
     }()) || _class);
 });
-define('components/user/user-login',['exports', 'aurelia-framework', 'aurelia-validation', '../../services/user-service'], function (exports, _aureliaFramework, _aureliaValidation, _userService) {
+define('components/user/user-login',['exports', 'aurelia-framework', 'aurelia-validation', '../../services/session-service'], function (exports, _aureliaFramework, _aureliaValidation, _sessionService) {
     'use strict';
 
     Object.defineProperty(exports, "__esModule", {
@@ -5905,14 +6090,14 @@ define('components/user/user-login',['exports', 'aurelia-framework', 'aurelia-va
 
     var _dec, _class;
 
-    var UserLogin = exports.UserLogin = (_dec = (0, _aureliaFramework.inject)(_userService.UserService, _aureliaFramework.NewInstance.of(_aureliaValidation.ValidationController)), _dec(_class = function () {
-        function UserLogin(userService, validationController) {
+    var UserLogin = exports.UserLogin = (_dec = (0, _aureliaFramework.inject)(_sessionService.SessionService, _aureliaFramework.NewInstance.of(_aureliaValidation.ValidationController)), _dec(_class = function () {
+        function UserLogin(sessionService, validationController) {
             _classCallCheck(this, UserLogin);
 
             this.email = '';
             this.password = '';
 
-            this.userService = userService;
+            this.sessionService = sessionService;
             this.validationController = validationController;
             this.isWorking = false;
             this.success = false;
@@ -5926,8 +6111,6 @@ define('components/user/user-login',['exports', 'aurelia-framework', 'aurelia-va
         };
 
         UserLogin.prototype.login = function login() {
-            var _this = this;
-
             this.success = false;
             this.isWorking = true;
 
@@ -5936,15 +6119,13 @@ define('components/user/user-login',['exports', 'aurelia-framework', 'aurelia-va
                 password: this.password
             };
 
-            setTimeout(function () {
-                _this.validationController.validate().then(function (validation) {
-                    if (validation.valid) {
-                        _this.success = true;
-                    }
-                }).then(function () {
-                    return _this.isWorking = false;
-                });
-            }, 1000);
+            this.sessionService.login(userCredentials).then(function (success) {
+                console.log("LOGIN SUCCESS");
+                console.log(success);
+            }, function (failue) {
+                console.log("LOGIN FAIL");
+                console.log(failure);
+            });
         };
 
         return UserLogin;
@@ -6031,23 +6212,6 @@ define('components/user/user-registration',['exports', 'aurelia-framework', 'aur
         return UserRegistration;
     }()) || _class);
 });
-define('layouts/main/nav-bar',["exports"], function (exports) {
-    "use strict";
-
-    Object.defineProperty(exports, "__esModule", {
-        value: true
-    });
-
-    function _classCallCheck(instance, Constructor) {
-        if (!(instance instanceof Constructor)) {
-            throw new TypeError("Cannot call a class as a function");
-        }
-    }
-
-    var NavBar = exports.NavBar = function NavBar() {
-        _classCallCheck(this, NavBar);
-    };
-});
 define('layouts/main/login-modal',["exports"], function (exports) {
     "use strict";
 
@@ -6063,6 +6227,23 @@ define('layouts/main/login-modal',["exports"], function (exports) {
 
     var LoginModal = exports.LoginModal = function LoginModal() {
         _classCallCheck(this, LoginModal);
+    };
+});
+define('layouts/main/nav-bar',["exports"], function (exports) {
+    "use strict";
+
+    Object.defineProperty(exports, "__esModule", {
+        value: true
+    });
+
+    function _classCallCheck(instance, Constructor) {
+        if (!(instance instanceof Constructor)) {
+            throw new TypeError("Cannot call a class as a function");
+        }
+    }
+
+    var NavBar = exports.NavBar = function NavBar() {
+        _classCallCheck(this, NavBar);
     };
 });
 define('layouts/main/registration-modal',["exports"], function (exports) {
@@ -6082,90 +6263,30 @@ define('layouts/main/registration-modal',["exports"], function (exports) {
         _classCallCheck(this, RegistrationModal);
     };
 });
-define('services/session',["exports"], function (exports) {
-    "use strict";
+define('components/callback',['exports', 'aurelia-framework', '../services/auth-service'], function (exports, _aureliaFramework, _authService) {
+  'use strict';
 
-    Object.defineProperty(exports, "__esModule", {
-        value: true
-    });
+  Object.defineProperty(exports, "__esModule", {
+    value: true
+  });
+  exports.Callback = undefined;
 
-    function _classCallCheck(instance, Constructor) {
-        if (!(instance instanceof Constructor)) {
-            throw new TypeError("Cannot call a class as a function");
-        }
+  function _classCallCheck(instance, Constructor) {
+    if (!(instance instanceof Constructor)) {
+      throw new TypeError("Cannot call a class as a function");
     }
+  }
 
-    var SessionService = exports.SessionService = function () {
-        function SessionService() {
-            _classCallCheck(this, SessionService);
-        }
+  var _dec, _class;
 
-        SessionService.prototype.setCookie = function setCookie(cname, cvalue, exdays) {
-            var d = new Date();
-            d.setTime(d.getTime() + exdays * 24 * 60 * 60 * 1000);
-            var expires = "expires=" + d.toUTCString();
-            document.cookie = cname + "=" + cvalue + ";" + expires + ";path=/";
-        };
+  var Callback = exports.Callback = (_dec = (0, _aureliaFramework.inject)(_authService.AuthService), _dec(_class = function Callback(AuthService) {
+    _classCallCheck(this, Callback);
 
-        SessionService.prototype.getCookie = function getCookie(cname) {
-            var name = cname + "=";
-            var ca = document.cookie.split(';');
-            for (var i = 0; i < ca.length; i++) {
-                var c = ca[i];
-                while (c.charAt(0) == ' ') {
-                    c = c.substring(1);
-                }
-                if (c.indexOf(name) == 0) {
-                    return c.substring(name.length, c.length);
-                }
-            }
-            return "";
-        };
-
-        return SessionService;
-    }();
+    this.auth = AuthService;
+    this.auth.handleAuthentication();
+  }) || _class);
 });
-define('services/session-service',["exports"], function (exports) {
-    "use strict";
-
-    Object.defineProperty(exports, "__esModule", {
-        value: true
-    });
-
-    function _classCallCheck(instance, Constructor) {
-        if (!(instance instanceof Constructor)) {
-            throw new TypeError("Cannot call a class as a function");
-        }
-    }
-
-    var SessionService = exports.SessionService = function () {
-        function SessionService() {
-            _classCallCheck(this, SessionService);
-        }
-
-        SessionService.prototype.setCookie = function setCookie(cookieName, cookieValue, expirationDays) {
-            var date = new Date();
-            date.setDate(date.getDate() + expirationDays * 24 * 60 * 60 * 1000);
-            var expires = "expires=" + date.toUTCString();
-            document.cookie = cookieName + "=" + cookieValue + ";" + expires + ";path=/";
-        };
-
-        SessionService.prototype.getCookie = function getCookie(cookieName) {
-            var nameEQ = cookieName + "=";
-            var ca = document.cookie.split(';');
-            for (var i = 0; i < ca.length; i++) {
-                var c = ca[i];
-                while (c.charAt(0) == ' ') {
-                    c = c.substring(1, c.length);
-                }if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length, c.length);
-            }
-            return null;
-        };
-
-        return SessionService;
-    }();
-});
-define('text!app.html', ['module'], function(module) { module.exports = "<template><require from=\"bootstrap/css/bootstrap.css\"></require><require from=\"./layouts/main/nav-bar\"></require><nav-bar></nav-bar><router-view class=\"container\"></router-view></template>"; });
+define('text!app.html', ['module'], function(module) { module.exports = "<template><require from=\"bootstrap/css/bootstrap.css\"></require><require from=\"./layouts/main/nav-bar\"></require><nav-bar></nav-bar><button type=\"button\" click.delegate=\"login()\">login</button> <button type=\"button\" click.delegate=\"logout()\">logout</button><router-view class=\"container\"></router-view></template>"; });
 define('text!layouts/frame-admin-panel-layout.html', ['module'], function(module) { module.exports = "<template><require from=\"../components/frame/frame-list\"></require><frame-list></frame-list><div class=\"row\"><div class=\"col-md-4 col-md-offset-4\"><div class=\"panel panel-default\"><div class=\"panel-heading\">Crear Marco</div><div class=\"panel-body\"><require from=\"../components/frame/frame-upload-form\"></require><frame-upload-form></frame-upload-form></div></div></div></div></template>"; });
 define('text!components/frame/frame-detail-modal.html', ['module'], function(module) { module.exports = "<template><div class=\"modal fade bs-example-modal-lg\" id=\"frameDetailModal\" tabindex=\"-1\" role=\"dialog\" aria-labelledby=\"frameDetailModal\"><div class=\"modal-dialog modal-lg\" role=\"document\"><div class=\"modal-content\"><div class=\"modal-header\"><button type=\"button\" class=\"close\" data-dismiss=\"modal\" aria-label=\"Close\"><span aria-hidden=\"true\">&times;</span></button><h4 class=\"modal-title\" id=\"myModalLabel\">Detalles - ${frame.uniqueName}</h4></div><div class=\"modal-body\"><div class=\"row\"><div class=\"col-md-12\"><img src=\"${frame.picture.imageUrl}\" class=\"col-md-12\"></div></div><hr><div class=\"row\"><div class=\"col-md-6\"><require from=\"./frame-update-data-form\"></require><frame-update-data-form frame.bind=\"frame\"></frame-update-data-form></div></div></div><div class=\"modal-footer\"></div></div></div></div></template>"; });
 define('text!components/frame/frame-gallery.html', ['module'], function(module) { module.exports = "<template><require from=\"./frame-thumbnail\"></require><div class=\"row\"><div class=\"alert alert-danger\" if.bind=\"error.description\"><strong>${error.title}</strong> ${error.description}</div></div><div repeat.for=\"row of frameRows\"><div class=\"row\"><div repeat.for=\"column of framesPerRow\"><div class=\"col-md-${12/framesPerRow}\"><frame-thumbnail frame.bind=\"frames[$parent.index * framesPerRow + $index]\"></frame-thumbnail></div></div></div></div>\\</template>"; });
@@ -6180,7 +6301,8 @@ define('text!components/picture/picture-upload.html', ['module'], function(modul
 define('text!components/user/user-list.html', ['module'], function(module) { module.exports = "<template><div class=\"row\"><div class=\"col-md-8 col-md-offset-2\"><div class=\"alert alert-danger\" if.bind=\"error.description\"><strong>${error.title}</strong> ${error.description}</div></div></div><div class=\"row\"><div class=\"col-md-10 col-md-offset-1\"><table class=\"table table-bordered\" if.bind=\"users\"><tr><th>ID</th><th>Nombre</th><th>Apellido</th><th>Email</th><th>Rol</th><th>Estado</th></tr><tr repeat.for=\"user of users\"><td>${user.id}</td><td>${user.firstName}</td><td>${user.lastName}</td><td>${user.email}</td><td>${user.role.name}</td><td>${user.state.name}</td></tr></table></div></div></template>"; });
 define('text!components/user/user-login.html', ['module'], function(module) { module.exports = "<template><form role=\"form\" submit.delegate=\"login()\"><div class=\"form-group\"><label for=\"email\">Email:</label><input type=\"email\" class=\"form-control\" value.bind=\"email & validate\" placeholder=\"ej: juan.perez@email.com\"></div><div class=\"form-group\"><label for=\"password\">Contraseña:</label><input type=\"password\" class=\"form-control\" value.bind=\"password & validate\"></div><div class=\"form-group\"><div class=\"alert alert-warning\" repeat.for=\"error of validationController.errors\">${error.message}</div><div class=\"alert alert-danger\" if.bind=\"serverError.title\"><strong>${serverError.title}</strong> ${serverError.description}</div><div class=\"alert alert-success\" if.bind=\"success\"><strong>Exito!</strong> El usuario fue registrado correctamente.</div></div><button type=\"submit\" class=\"btn btn-primary btn-lg btn-block\" if.bind=\"!isWorking\">Ingresar</button> <button type=\"submit\" class=\"btn btn-primary btn-lg btn-block disabled\" if.bind=\"isWorking\"><i class=\"fa fa-spinner fa-spin\"></i> Ingresando...</button></form></template>"; });
 define('text!components/user/user-registration.html', ['module'], function(module) { module.exports = "<template><form role=\"form\" submit.delegate=\"register()\"><div class=\"form-group\"><label for=\"firstName\">Nombre:</label><input type=\"text\" class=\"form-control\" value.bind=\"firstName & validate\" placeholder=\"ej: Juan\"></div><div class=\"form-group\"><label for=\"lastName\">Apellido:</label><input type=\"text\" class=\"form-control\" value.bind=\"lastName & validate\" placeholder=\"ej: Perez\"></div><div class=\"form-group\"><label for=\"email\">Email:</label><input type=\"email\" class=\"form-control\" value.bind=\"email & validate\" placeholder=\"ej: juan.perez@email.com\"></div><div class=\"form-group\"><label for=\"password\">Contraseña:</label><input type=\"password\" class=\"form-control\" value.bind=\"password & validate\"></div><div class=\"form-group\"><div class=\"alert alert-warning\" repeat.for=\"error of validationController.errors\">${error.message}</div><div class=\"alert alert-danger\" if.bind=\"serverError.title\"><strong>${serverError.title}</strong> ${serverError.description}</div><div class=\"alert alert-success\" if.bind=\"success\"><strong>Exito!</strong> El usuario fue registrado correctamente.</div></div><button type=\"submit\" class=\"btn btn-success btn-lg btn-block\" if.bind=\"!isWorking\">Registrarse</button> <button type=\"submit\" class=\"btn btn-success btn-lg btn-block disabled\" if.bind=\"isWorking\"><i class=\"fa fa-spinner fa-spin\"></i> Enviando...</button></form></template>"; });
-define('text!layouts/main/nav-bar.html', ['module'], function(module) { module.exports = "<template><nav class=\"navbar navbar-default\"><div class=\"container-fluid\"><div class=\"navbar-header\"><button type=\"button\" class=\"navbar-toggle collapsed\" data-toggle=\"collapse\" data-target=\"#bs-example-navbar-collapse-1\" aria-expanded=\"false\"><span class=\"sr-only\">Toggle navigation</span> <span class=\"icon-bar\"></span> <span class=\"icon-bar\"></span> <span class=\"icon-bar\"></span></button> <a class=\"navbar-brand\" href=\"#\">WeFrame</a></div><div class=\"collapse navbar-collapse\" id=\"bs-example-navbar-collapse-1\"><ul class=\"nav navbar-nav\"><li class=\"active\"><a href=\"#\">Link <span class=\"sr-only\">(current)</span></a></li><li><a href=\"#\">Link</a></li><li class=\"dropdown\"><a href=\"#\" class=\"dropdown-toggle\" data-toggle=\"dropdown\" role=\"button\" aria-haspopup=\"true\" aria-expanded=\"false\">Admin <span class=\"caret\"></span></a><ul class=\"dropdown-menu\"><li><a route-href=\"route: index\">Galeria de marcos</a></li><li><a route-href=\"route: frame-admin-list\">Lista de marcos</a></li><li><a route-href=\"route: frame-admin\">Marcos</a></li><li role=\"separator\" class=\"divider\"></li><li><a route-href=\"route: user-admin-list\">Lista de usuarios</a></li></ul></li></ul><ul class=\"nav navbar-nav navbar-right\"><li><button type=\"button\" class=\"btn btn-primary navbar-btn\" data-toggle=\"modal\" data-target=\"#userLoginModal\">Ingresar</button></li><li><p class=\"navbar-text\"></p></li><li><button type=\"button\" class=\"btn btn-success navbar-btn\" data-toggle=\"modal\" data-target=\"#userRegistrationModal\">Registrarse</button></li></ul></div></div></nav><require from=\"./login-modal\"></require><login-modal></login-modal><require from=\"./registration-modal\"></require><registration-modal></registration-modal></template>"; });
 define('text!layouts/main/login-modal.html', ['module'], function(module) { module.exports = "<template><div class=\"modal fade\" id=\"userLoginModal\" tabindex=\"-1\" role=\"dialog\" aria-labelledby=\"userLoginModal\"><div class=\"modal-dialog\" role=\"document\"><div class=\"modal-content\"><div class=\"modal-header\"><button type=\"button\" class=\"close\" data-dismiss=\"modal\" aria-label=\"Close\"><span aria-hidden=\"true\">&times;</span></button><h4 class=\"modal-title\" id=\"myModalLabel\">Iniciar sesion</h4></div><div class=\"modal-body\"><require from=\"../../components/user/user-login\"></require><div class=\"row\"><div class=\"col-md-12\"><user-login></user-login></div></div></div><div class=\"modal-footer\"></div></div></div></div></template>"; });
+define('text!layouts/main/nav-bar.html', ['module'], function(module) { module.exports = "<template><nav class=\"navbar navbar-default\"><div class=\"container-fluid\"><div class=\"navbar-header\"><button type=\"button\" class=\"navbar-toggle collapsed\" data-toggle=\"collapse\" data-target=\"#bs-example-navbar-collapse-1\" aria-expanded=\"false\"><span class=\"sr-only\">Toggle navigation</span> <span class=\"icon-bar\"></span> <span class=\"icon-bar\"></span> <span class=\"icon-bar\"></span></button> <a class=\"navbar-brand\" href=\"#\">WeFrame</a></div><div class=\"collapse navbar-collapse\" id=\"bs-example-navbar-collapse-1\"><ul class=\"nav navbar-nav\"><li class=\"active\"><a href=\"#\">Link <span class=\"sr-only\">(current)</span></a></li><li><a href=\"#\">Link</a></li><li class=\"dropdown\"><a href=\"#\" class=\"dropdown-toggle\" data-toggle=\"dropdown\" role=\"button\" aria-haspopup=\"true\" aria-expanded=\"false\">Admin <span class=\"caret\"></span></a><ul class=\"dropdown-menu\"><li><a route-href=\"route: index\">Galeria de marcos</a></li><li><a route-href=\"route: frame-admin-list\">Lista de marcos</a></li><li><a route-href=\"route: frame-admin\">Marcos</a></li><li role=\"separator\" class=\"divider\"></li><li><a route-href=\"route: user-admin-list\">Lista de usuarios</a></li></ul></li></ul><ul class=\"nav navbar-nav navbar-right\"><li><button type=\"button\" class=\"btn btn-primary navbar-btn\" data-toggle=\"modal\" data-target=\"#userLoginModal\">Ingresar</button></li><li><p class=\"navbar-text\"></p></li><li><button type=\"button\" class=\"btn btn-success navbar-btn\" data-toggle=\"modal\" data-target=\"#userRegistrationModal\">Registrarse</button></li></ul></div></div></nav><require from=\"./login-modal\"></require><login-modal></login-modal><require from=\"./registration-modal\"></require><registration-modal></registration-modal></template>"; });
 define('text!layouts/main/registration-modal.html', ['module'], function(module) { module.exports = "<template><div class=\"modal fade\" id=\"userRegistrationModal\" tabindex=\"-1\" role=\"dialog\" aria-labelledby=\"userRegistrationModal\"><div class=\"modal-dialog\" role=\"document\"><div class=\"modal-content\"><div class=\"modal-header\"><button type=\"button\" class=\"close\" data-dismiss=\"modal\" aria-label=\"Close\"><span aria-hidden=\"true\">&times;</span></button><h4 class=\"modal-title\" id=\"myModalLabel\">Registrarse</h4></div><div class=\"modal-body\"><require from=\"../../components/user/user-registration\"></require><div class=\"row\"><div class=\"col-md-12\"><user-registration></user-registration></div></div></div><div class=\"modal-footer\"></div></div></div></div></template>"; });
+define('text!components/callback.html', ['module'], function(module) { module.exports = "<template><div class=\"spinner\"><i class=\"fa fa-spinner fa-spin\"></i></div></template>"; });
 //# sourceMappingURL=app-bundle.js.map

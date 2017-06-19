@@ -16,4 +16,8 @@ export class RestService {
                 x.withHeader('Authorization', authorizationHeader);
             });
     }
+
+    getClient() {
+        return this.httpClient;
+    }
 }

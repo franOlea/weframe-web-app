@@ -14,7 +14,7 @@ export class FrameGallery {
     }
 
     created() {
-        this.updateFrameList(0,10);
+        this.updateFrameList(1,10);
     }
 
     updateFrameList(page, size) {
