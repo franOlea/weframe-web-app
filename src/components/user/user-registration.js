@@ -1,17 +1,18 @@
-import {inject, NewInstance} from 'aurelia-framework';
-import {ValidationController, validateTrigger, ValidationRules} from 'aurelia-validation';
-import {UserService} from '../../services/user-service';
+import { inject, NewInstance } from 'aurelia-framework';
+import { ValidationController, validateTrigger, ValidationRules } from 'aurelia-validation';
+import { RestService } from '../../services/rest-service';
+import environment from '../../environment';
 
-@inject(UserService,NewInstance.of(ValidationController))
+@inject(RestService, NewInstance.of(ValidationController))
 export class UserRegistration {
-    
+
     firstName = '';
     lastName = '';
     email = '';
     password = '';
 
-    constructor(userService, validationController) {
-        this.userService = userService;
+    constructor(restService, validationController) {
+        this.restService = restService;
         this.validationController = validationController;
         this.isWorking = false;
         this.success = false;
@@ -33,25 +34,23 @@ export class UserRegistration {
         this.success = false;
         this.isWorking = true;
 
-        var user = { 
+        var user = {
             firstName: this.firstName,
             lastName: this.lastName,
-            email: this.email, 
+            email: this.email,
             password: this.password
         }
 
-        setTimeout(() => {
-            this.validationController.validate()
-                .then((validation) => {
-                    if(validation.valid) {
-                        this.success = true;
-                    }
-                }).then(() => this.isWorking = false);
-        }, 1000);
+        this.postUser(user);
     }
 
     postUser(user) {
-        this.userService.postUser(user).then(
+        return this.restService.getClient()
+            .createRequest(environment.webApiUserRegistrationPath)
+            .asPost()
+            .withContent(user)
+            .send()
+            .then(
             () => {
                 this.success = true;
             },
@@ -62,7 +61,7 @@ export class UserRegistration {
                     description: failureMessage.description
                 };
             }
-        ).then(() => this.isWorking = false);
+            ).then(() => this.isWorking = false);
     }
 
 }

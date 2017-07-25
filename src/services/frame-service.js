@@ -14,7 +14,7 @@ export class FrameService {
                 .withHeader('page', pageNumber)
                 .withHeader('size', pageSize)
                 .asGet()
-                .withTimeout(timeout)
+                // .withTimeout(timeout)
                 .send()
     }
 

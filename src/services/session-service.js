@@ -1,11 +1,31 @@
 import {inject} from 'aurelia-framework';
+import { EventAggregator } from 'aurelia-event-aggregator';
 import {RestService} from './rest-service';
 import environment from '../environment';
 
-@inject(RestService)
+@inject(RestService, EventAggregator)
 export class SessionService {
-    constructor(restService) {
+    authenticated = false;
+    user = {};
+
+    constructor(restService, eventAggregator) {
         this.restService = restService;
+        this.eventAggregator = eventAggregator;
+		this.init();
+    }
+
+    init() {
+        this.eventAggregator.subscribe(environment.authenticationChangedEventName, authState => {
+			this.authenticated = authState.authenticated;
+		});
+        var token = this.getCookie("Authorization");
+        if(token) {
+            console.log("TOKEN FOUND: "+token);
+            this.eventAggregator.publish(environment.authenticationChangedEventName, {
+                authenticaed: true,
+                token: token
+            });
+        }
     }
 
     setCookie(cookieName, cookieValue, expirationDays) {
@@ -28,20 +48,57 @@ export class SessionService {
 
     login(userCredentials) {
         return this.restService.getClient()
-                .createRequest('login')
+                .createRequest(environment.webApiUserLoginPath)
                 .asPost()
                 .withContent(userCredentials)
-                .withTimeout(3000)
                 .send()
                 .then(
                     success => {
-                        console.log("SESSION SERVICE SUCCESS");
+                        console.log("SUCCESSFUL LOGIN");
                         console.log(success);
+                        this.setCookie(
+                            "Authorization", 
+                            success.headers.headers.authorization.value,
+                            1
+                        );
+                        this.eventAggregator.publish(environment.authenticationChangedEventName, {
+                            authenticated: true,
+                            token: success.headers.headers.authorization.value
+                        });
+                        this.fetchCurrentSessionUser();
                     },
-                    failue => {
-                        console.log("SESSION SERVICE FAIL");
+                    failure => {
+                        console.log("LOGIN FAILURE");
                         console.log(failure);
+                        this.eventAggregator.publish(environment.authenticationChangedEventName, {
+                            authenticated: false
+                        });
                     }
                 );
+    }
+
+    fetchCurrentSessionUser() {
+        if(this.authenticated) {
+            this.restService.getClient()
+                    .createRequest(environment.webApiCurrentUserPath)
+                    .asGet()
+                    .send()
+                    .then(
+                        success => {
+                            this.user = JSON.parse(success.response);
+                        },
+                        failue => {
+                            this.user = null;
+                        }
+                    )
+        }
+    }
+
+    getUser() {
+        if(this.authenticated && this.user) { 
+            return this.user;
+        } else {
+            return null;
+        }
     }
 }
