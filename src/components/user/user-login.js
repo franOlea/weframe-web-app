@@ -14,28 +14,19 @@ export class UserLogin {
         this.sessionService = sessionService;
         this.validationController = validationController;
         this.eventAggregator = eventAggregator;
+        this.resetFields();
+    }
+
+    created() {
+        console.log(modalId);
+    }
+
+    resetFields() {
         this.isWorking = false;
         this.success = false;
         this.serverError = {};
-		this.subscribeToAuthenticationEvent();
-    }
-
-    subscribeToAuthenticationEvent() {
-        this.eventAggregator.subscribe(environment.authenticationChangedEventName, authState => {
-            console.log(authState);
-			if(this.isWorking == true) {
-                this.isWorking = false;
-                if(authState.authenticated == true) {
-                    this.success = true;
-                } else {
-                    this.success = false;
-                    this.serverError = {
-                        title: "Error",
-                        description: "Email o contraseña incorrectos."
-                    }
-                }
-            }
-		});
+        this.email = '';
+        this.password = '';
     }
 
     created() {
@@ -48,7 +39,14 @@ export class UserLogin {
     }
 
     login() {
-        this.success = false;
+        this.validationController.validate().then((validation) => {
+            if(validation.valid) {
+                this.doLogin();
+            }
+        });
+    }
+
+    doLogin() {
         this.isWorking = true;
 
         var userCredentials = { 
@@ -56,16 +54,22 @@ export class UserLogin {
             password: this.password
         }
 
-        this.sessionService.login(userCredentials);
-        
-
-        // setTimeout(() => {
-        //     this.validationController.validate()
-        //         .then((validation) => {
-        //             if(validation.valid) {
-        //                 this.success = true;
-        //             }
-        //         }).then(() => this.isWorking = false);
-        // }, 1000);
+        this.sessionService.login(userCredentials).then(result => {
+            if(result) {
+                this.success = true;
+                setTimeout(() => {
+                    $("#userLoginModal").modal("hide");
+                    this.resetFields();
+                }, 1500);
+            } else {
+                this.resetFields();
+                this.success = false;
+                this.serverError = {
+                    title: "Error",
+                    description: "Email o contraseña incorrectos."
+                }
+                this.isWorking = false;
+            }
+        });
     }
 }

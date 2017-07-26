@@ -28,7 +28,7 @@
 					</li>
 				</ul>
 
-				<ul class="nav navbar-nav navbar-right">
+				<ul class="nav navbar-nav navbar-right" if.bind="!authenticated">
 					<li>
                         <button type="button" 
                                 class="btn btn-primary navbar-btn" 
@@ -41,6 +41,18 @@
                                 class="btn btn-success navbar-btn"
                                 data-toggle="modal"
                                 data-target="#userRegistrationModal">Registrarse</button>
+                    </li>
+				</ul>
+
+				<ul class="nav navbar-nav navbar-right" if.bind="authenticated">
+					<li>
+                        <p class="navbar-text">Hola ${user.firstName}</p>
+                    </li>
+					<li><p class="navbar-text"></p></li>
+					<li>
+                        <button type="button" 
+                                class="btn btn-warning navbar-btn"
+								click.trigger="logout()">Cerrar sesion</button>
                     </li>
 				</ul>
 			</div>

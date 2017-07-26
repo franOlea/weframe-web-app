@@ -39,13 +39,4 @@ export class App {
 
 		this.router = router;
 	}
-
-	login() {
-		var credentials = {
-			email: "admin@weframe.com",
-			password: "password"
-		};
-
-		this.sessionService.login(credentials);
-	}
 }

@@ -2,25 +2,26 @@
     <form role="form" submit.delegate="login()">
         <div class="form-group">
             <label for="email">Email:</label>
-            <input type="email" class="form-control" value.bind="email & validate" placeholder="ej: juan.perez@email.com">
+            <input type="email" class="form-control" value.bind="email & validate" placeholder="ej: juan.perez@email.com" disabled.bind="isWorking">
         </div>
         <div class="form-group">
             <label for="password">Contraseña:</label>
-            <input type="password" class="form-control" value.bind="password & validate" >
+            <input type="password" class="form-control" value.bind="password & validate" disabled.bind="isWorking">
         </div>
         <div class="form-group">
             <div class="alert alert-warning" repeat.for="error of validationController.errors">
-                <!--<strong>${error.title}</strong> ${error.description}-->
                 ${error.message}
             </div>
             <div class="alert alert-danger" if.bind="serverError.title">
                 <strong>${serverError.title}</strong> ${serverError.description}
             </div>
             <div class="alert alert-success" if.bind="success">
-                <strong>Exito!</strong> El usuario fue registrado correctamente.
+                <strong>Exito!</strong> Ingreso exitoso.
             </div>
         </div>
-        <button type="submit" class="btn btn-primary btn-lg btn-block" if.bind="!isWorking">Ingresar</button>
-        <button type="submit" class="btn btn-primary btn-lg btn-block disabled" if.bind="isWorking"><i class="fa fa-spinner fa-spin"></i> Ingresando...</button>
+        <button type="submit" class="btn btn-primary btn-lg btn-block" disabled.bind="isWorking">
+            <span if.bind="!isWorking">Ingresar</span>
+            <span if.bind="isWorking">Cargando <i class="fa fa-spinner fa-pulse fa-fw" aria-hidden="true"></i></span>
+        </button>
     </form>
 </template>

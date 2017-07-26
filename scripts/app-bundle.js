@@ -49,20 +49,11 @@ define('app',['exports', 'aurelia-framework', './services/session-service'], fun
 			this.router = router;
 		};
 
-		App.prototype.login = function login() {
-			var credentials = {
-				email: "admin@weframe.com",
-				password: "password"
-			};
-
-			this.sessionService.login(credentials);
-		};
-
 		return App;
 	}()) || _class);
 });
-define('environment',['exports'], function (exports) {
-  'use strict';
+define('environment',["exports"], function (exports) {
+  "use strict";
 
   Object.defineProperty(exports, "__esModule", {
     value: true
@@ -72,6 +63,7 @@ define('environment',['exports'], function (exports) {
     testing: true,
 
     authenticationChangedEventName: "authentication-changed",
+    currentUserRetrievedEventName: "current-user-retrieved",
     webApiUrl: 'http://localhost:8080',
     webApiUserRegistrationPath: 'authentication/register',
     webApiUserLoginPath: 'authentication/login',
@@ -344,27 +336,16 @@ define('services/session-service',['exports', 'aurelia-framework', 'aurelia-even
         function SessionService(restService, eventAggregator) {
             _classCallCheck(this, SessionService);
 
-            this.authenticated = false;
-            this.user = {};
-
             this.restService = restService;
             this.eventAggregator = eventAggregator;
-            this.init();
         }
 
         SessionService.prototype.init = function init() {
-            var _this = this;
-
-            this.eventAggregator.subscribe(_environment2.default.authenticationChangedEventName, function (authState) {
-                _this.authenticated = authState.authenticated;
-            });
             var token = this.getCookie("Authorization");
             if (token) {
                 console.log("TOKEN FOUND: " + token);
-                this.eventAggregator.publish(_environment2.default.authenticationChangedEventName, {
-                    authenticaed: true,
-                    token: token
-                });
+                this.publishSessionChanged(true, token);
+                this.fetchCurrentSessionUser();
             }
         };
 
@@ -388,44 +369,66 @@ define('services/session-service',['exports', 'aurelia-framework', 'aurelia-even
         };
 
         SessionService.prototype.login = function login(userCredentials) {
-            var _this2 = this;
+            var _self = this;
+            var promise = new Promise(function (resolve, reject) {
+                _self.restService.getClient().createRequest(_environment2.default.webApiUserLoginPath).asPost().withContent(userCredentials).send().then(function (success) {
+                    var token = success.headers.headers.authorization.value;
+                    _self.saveAuthorizationCookie(token, 1);
+                    _self.publishSessionChanged(true, token);
+                    _self.fetchCurrentSessionUser();
+                    resolve(true);
+                }, function (failure) {
+                    _self.publishSessionChanged(false);
+                    resolve(false);
+                });
+            });
+            return promise;
+        };
 
-            return this.restService.getClient().createRequest(_environment2.default.webApiUserLoginPath).asPost().withContent(userCredentials).send().then(function (success) {
-                console.log("SUCCESSFUL LOGIN");
-                console.log(success);
-                _this2.setCookie("Authorization", success.headers.headers.authorization.value, 1);
-                _this2.eventAggregator.publish(_environment2.default.authenticationChangedEventName, {
-                    authenticated: true,
-                    token: success.headers.headers.authorization.value
-                });
-                _this2.fetchCurrentSessionUser();
-            }, function (failure) {
-                console.log("LOGIN FAILURE");
-                console.log(failure);
-                _this2.eventAggregator.publish(_environment2.default.authenticationChangedEventName, {
-                    authenticated: false
-                });
+        SessionService.prototype.logout = function logout() {
+            console.log("logout pressed");
+            this.eventAggregator.publish(_environment2.default.authenticationChangedEventName, {
+                authenticaed: false,
+                token: null
+            });
+            this.saveAuthorizationCookie(null);
+        };
+
+        SessionService.prototype.saveAuthorizationCookie = function saveAuthorizationCookie(token) {
+            var expirationDays = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : -1;
+
+            this.setCookie("Authorization", token, expirationDays);
+        };
+
+        SessionService.prototype.publishSessionChanged = function publishSessionChanged(authenticated) {
+            var token = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : null;
+
+            this.eventAggregator.publish(_environment2.default.authenticationChangedEventName, {
+                authenticated: authenticated,
+                token: token
             });
         };
 
-        SessionService.prototype.fetchCurrentSessionUser = function fetchCurrentSessionUser() {
-            var _this3 = this;
-
-            if (this.authenticated) {
-                this.restService.getClient().createRequest(_environment2.default.webApiCurrentUserPath).asGet().send().then(function (success) {
-                    _this3.user = JSON.parse(success.response);
-                }, function (failue) {
-                    _this3.user = null;
-                });
-            }
+        SessionService.prototype.publishUserChanged = function publishUserChanged(user) {
+            this.eventAggregator.publish(_environment2.default.currentUserRetrievedEventName, user);
         };
 
-        SessionService.prototype.getUser = function getUser() {
-            if (this.authenticated && this.user) {
-                return this.user;
-            } else {
-                return null;
-            }
+        SessionService.prototype.fetchCurrentSessionUser = function fetchCurrentSessionUser() {
+            var _this = this;
+
+            this.restService.getClient().createRequest(_environment2.default.webApiCurrentUserPath).asGet().send().then(function (success) {
+                if (success.statusCode == 200) {
+                    var user = JSON.parse(success.response);
+                    _this.publishUserChanged(user);
+                } else {
+                    _this.publishUserChanged(null);
+                    _this.publishSessionChanged(false);
+                }
+            }, function (failue) {
+                _this.publishUserChanged(null);
+                _this.publishSessionChanged(false);
+                _this.saveAuthorizationCookie(null);
+            });
         };
 
         return SessionService;
@@ -6097,30 +6100,19 @@ define('components/user/user-login',['exports', 'aurelia-framework', 'aurelia-ev
             this.sessionService = sessionService;
             this.validationController = validationController;
             this.eventAggregator = eventAggregator;
+            this.resetFields();
+        }
+
+        UserLogin.prototype.created = function created() {
+            console.log(modalId);
+        };
+
+        UserLogin.prototype.resetFields = function resetFields() {
             this.isWorking = false;
             this.success = false;
             this.serverError = {};
-            this.subscribeToAuthenticationEvent();
-        }
-
-        UserLogin.prototype.subscribeToAuthenticationEvent = function subscribeToAuthenticationEvent() {
-            var _this = this;
-
-            this.eventAggregator.subscribe(_environment2.default.authenticationChangedEventName, function (authState) {
-                console.log(authState);
-                if (_this.isWorking == true) {
-                    _this.isWorking = false;
-                    if (authState.authenticated == true) {
-                        _this.success = true;
-                    } else {
-                        _this.success = false;
-                        _this.serverError = {
-                            title: "Error",
-                            description: "Email o contraseña incorrectos."
-                        };
-                    }
-                }
-            });
+            this.email = '';
+            this.password = '';
         };
 
         UserLogin.prototype.created = function created() {
@@ -6130,7 +6122,18 @@ define('components/user/user-login',['exports', 'aurelia-framework', 'aurelia-ev
         };
 
         UserLogin.prototype.login = function login() {
-            this.success = false;
+            var _this = this;
+
+            this.validationController.validate().then(function (validation) {
+                if (validation.valid) {
+                    _this.doLogin();
+                }
+            });
+        };
+
+        UserLogin.prototype.doLogin = function doLogin() {
+            var _this2 = this;
+
             this.isWorking = true;
 
             var userCredentials = {
@@ -6138,7 +6141,23 @@ define('components/user/user-login',['exports', 'aurelia-framework', 'aurelia-ev
                 password: this.password
             };
 
-            this.sessionService.login(userCredentials);
+            this.sessionService.login(userCredentials).then(function (result) {
+                if (result) {
+                    _this2.success = true;
+                    setTimeout(function () {
+                        $("#userLoginModal").modal("hide");
+                        _this2.resetFields();
+                    }, 1500);
+                } else {
+                    _this2.resetFields();
+                    _this2.success = false;
+                    _this2.serverError = {
+                        title: "Error",
+                        description: "Email o contraseña incorrectos."
+                    };
+                    _this2.isWorking = false;
+                }
+            });
         };
 
         return UserLogin;
@@ -6240,12 +6259,21 @@ define('layouts/main/login-modal',["exports"], function (exports) {
         _classCallCheck(this, LoginModal);
     };
 });
-define('layouts/main/nav-bar',["exports"], function (exports) {
-    "use strict";
+define('layouts/main/nav-bar',['exports', 'aurelia-framework', 'aurelia-event-aggregator', '../../services/session-service', '../../environment'], function (exports, _aureliaFramework, _aureliaEventAggregator, _sessionService, _environment) {
+    'use strict';
 
     Object.defineProperty(exports, "__esModule", {
         value: true
     });
+    exports.NavBar = undefined;
+
+    var _environment2 = _interopRequireDefault(_environment);
+
+    function _interopRequireDefault(obj) {
+        return obj && obj.__esModule ? obj : {
+            default: obj
+        };
+    }
 
     function _classCallCheck(instance, Constructor) {
         if (!(instance instanceof Constructor)) {
@@ -6253,9 +6281,43 @@ define('layouts/main/nav-bar',["exports"], function (exports) {
         }
     }
 
-    var NavBar = exports.NavBar = function NavBar() {
-        _classCallCheck(this, NavBar);
-    };
+    var _dec, _class;
+
+    var NavBar = exports.NavBar = (_dec = (0, _aureliaFramework.inject)(_aureliaEventAggregator.EventAggregator, _sessionService.SessionService), _dec(_class = function () {
+        function NavBar(eventAggregator, sessionService) {
+            _classCallCheck(this, NavBar);
+
+            this.authenticated = false;
+            this.user = {};
+
+            this.eventAggregator = eventAggregator;
+            this.sessionService = sessionService;
+
+            this.subscribeToAuthenticationEvent();
+            this.sessionService.init();
+        }
+
+        NavBar.prototype.subscribeToAuthenticationEvent = function subscribeToAuthenticationEvent() {
+            var _this = this;
+
+            console.log("subscribed for session events");
+            this.eventAggregator.subscribe(_environment2.default.authenticationChangedEventName, function (authState) {
+                _this.authenticated = authState.authenticated;
+                console.log(authState);
+            });
+
+            this.eventAggregator.subscribe(_environment2.default.currentUserRetrievedEventName, function (user) {
+                _this.user = user;
+                console.log(user);
+            });
+        };
+
+        NavBar.prototype.logout = function logout() {
+            this.sessionService.logout();
+        };
+
+        return NavBar;
+    }()) || _class);
 });
 define('layouts/main/registration-modal',["exports"], function (exports) {
     "use strict";
@@ -6274,10 +6336,360 @@ define('layouts/main/registration-modal',["exports"], function (exports) {
         _classCallCheck(this, RegistrationModal);
     };
 });
-define('text!app.html', ['module'], function(module) { module.exports = "<template><require from=\"bootstrap/css/bootstrap.css\"></require><require from=\"./layouts/main/nav-bar\"></require><nav-bar></nav-bar><button type=\"button\" click.delegate=\"login()\">login</button><router-view class=\"container\"></router-view></template>"; });
+define('layouts/services/frame-service',['exports', 'aurelia-framework', './rest-service', '../environment'], function (exports, _aureliaFramework, _restService, _environment) {
+    'use strict';
+
+    Object.defineProperty(exports, "__esModule", {
+        value: true
+    });
+    exports.FrameService = undefined;
+
+    var _environment2 = _interopRequireDefault(_environment);
+
+    function _interopRequireDefault(obj) {
+        return obj && obj.__esModule ? obj : {
+            default: obj
+        };
+    }
+
+    function _classCallCheck(instance, Constructor) {
+        if (!(instance instanceof Constructor)) {
+            throw new TypeError("Cannot call a class as a function");
+        }
+    }
+
+    var _dec, _class;
+
+    var FrameService = exports.FrameService = (_dec = (0, _aureliaFramework.inject)(_restService.RestService), _dec(_class = function () {
+        function FrameService(restService) {
+            _classCallCheck(this, FrameService);
+
+            this.restService = restService;
+        }
+
+        FrameService.prototype.getFrames = function getFrames(pageNumber, pageSize) {
+            var timeout = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 5000;
+
+            return this.restService.getClient().createRequest(_environment2.default.webApiFramesPath).withHeader('page', pageNumber).withHeader('size', pageSize).asGet().send();
+        };
+
+        FrameService.prototype.getFrame = function getFrame(id) {
+            var timeout = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 2000;
+
+            return this.restService.getClient().createRequest(_environment2.default.webApiFramesPath + ('/' + id)).asGet().withTimeout(timeout).send();
+        };
+
+        FrameService.prototype.postFrame = function postFrame(frame) {
+            var timeout = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 3000;
+
+            return this.restService.getClient().createRequest(_environment2.default.webApiFramesPath).asPost().withContent(frame).withTimeout(timeout).send();
+        };
+
+        FrameService.prototype.deleteFrame = function deleteFrame(id) {
+            var timeout = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 3000;
+
+            return this.restService.getClient().createRequest(_environment2.default.webApiFramesPath + ('/' + id)).asDelete().withTimeout(timeout).send();
+        };
+
+        return FrameService;
+    }()) || _class);
+});
+define('layouts/services/picture-service',['exports', 'aurelia-http-client', '../environment'], function (exports, _aureliaHttpClient, _environment) {
+    'use strict';
+
+    Object.defineProperty(exports, "__esModule", {
+        value: true
+    });
+    exports.PictureService = undefined;
+
+    var _environment2 = _interopRequireDefault(_environment);
+
+    function _interopRequireDefault(obj) {
+        return obj && obj.__esModule ? obj : {
+            default: obj
+        };
+    }
+
+    function _classCallCheck(instance, Constructor) {
+        if (!(instance instanceof Constructor)) {
+            throw new TypeError("Cannot call a class as a function");
+        }
+    }
+
+    var PictureService = exports.PictureService = function () {
+        function PictureService() {
+            _classCallCheck(this, PictureService);
+
+            this.restClient = new _aureliaHttpClient.HttpClient();
+        }
+
+        PictureService.prototype.getPicture = function getPicture(uniquePictureName, isOriginalSize) {
+            return this.restClient.createRequest(_environment2.default.webApiPicturesPath).asGet().withParams({
+                uniqueName: uniquePictureName,
+                original: isOriginalSize
+            }).withBaseUrl(_environment2.default.webApiUrl).withTimeout(5000).send();
+        };
+
+        PictureService.prototype.putPicture = function putPicture(uniqueName, file, formatName, onProgress) {
+            var formData = new FormData();
+            formData.append('uniqueName', uniqueName);
+            formData.append('file', file);
+            formData.append('formatName', formatName);
+
+            return this.restClient.createRequest(_environment2.default.webApiPicturesPath).asPost().withContent(formData).withBaseUrl(_environment2.default.webApiUrl).withProgressCallback(function (evt) {
+                return console.log(evt);
+            }).send();
+        };
+
+        return PictureService;
+    }();
+});
+define('layouts/services/rest-service',['exports', 'aurelia-http-client', 'aurelia-framework', 'aurelia-event-aggregator', '../environment'], function (exports, _aureliaHttpClient, _aureliaFramework, _aureliaEventAggregator, _environment) {
+    'use strict';
+
+    Object.defineProperty(exports, "__esModule", {
+        value: true
+    });
+    exports.RestService = undefined;
+
+    var _environment2 = _interopRequireDefault(_environment);
+
+    function _interopRequireDefault(obj) {
+        return obj && obj.__esModule ? obj : {
+            default: obj
+        };
+    }
+
+    function _classCallCheck(instance, Constructor) {
+        if (!(instance instanceof Constructor)) {
+            throw new TypeError("Cannot call a class as a function");
+        }
+    }
+
+    var _dec, _class;
+
+    var RestService = exports.RestService = (_dec = (0, _aureliaFramework.inject)(_aureliaEventAggregator.EventAggregator), _dec(_class = function () {
+        function RestService(eventAggregator) {
+            _classCallCheck(this, RestService);
+
+            this.httpClient = new _aureliaHttpClient.HttpClient().configure(function (x) {
+                x.withBaseUrl(_environment2.default.webApiUrl);
+            });
+            this.eventAggregator = eventAggregator;
+            this.subscribeToAuthenticationEvent();
+        }
+
+        RestService.prototype.subscribeToAuthenticationEvent = function subscribeToAuthenticationEvent() {
+            var _this = this;
+
+            this.eventAggregator.subscribe(_environment2.default.authenticationChangedEventName, function (authState) {
+                console.log("REST SERVICE NOTIFIED: " + authState.token);
+                _this.authenticated = authState.authenticated;
+                if (authState.token) {
+                    _this.setAuthorizationHeader(authState.token);
+                } else {
+                    _this.setAuthorizationHeader(null);
+                }
+            });
+        };
+
+        RestService.prototype.setAuthorizationHeader = function setAuthorizationHeader(authorizationHeader) {
+            if (authorizationHeader) {
+                this.httpClient = new _aureliaHttpClient.HttpClient().configure(function (x) {
+                    x.withBaseUrl(_environment2.default.webApiUrl);
+                    x.withHeader('Authorization', authorizationHeader);
+                });
+            } else {
+                this.httpClient = new _aureliaHttpClient.HttpClient().configure(function (x) {
+                    x.withBaseUrl(_environment2.default.webApiUrl);
+                });
+            }
+        };
+
+        RestService.prototype.getClient = function getClient() {
+            return this.httpClient;
+        };
+
+        return RestService;
+    }()) || _class);
+});
+define('layouts/services/session-service',['exports', 'aurelia-framework', 'aurelia-event-aggregator', './rest-service', '../environment'], function (exports, _aureliaFramework, _aureliaEventAggregator, _restService, _environment) {
+    'use strict';
+
+    Object.defineProperty(exports, "__esModule", {
+        value: true
+    });
+    exports.SessionService = undefined;
+
+    var _environment2 = _interopRequireDefault(_environment);
+
+    function _interopRequireDefault(obj) {
+        return obj && obj.__esModule ? obj : {
+            default: obj
+        };
+    }
+
+    function _classCallCheck(instance, Constructor) {
+        if (!(instance instanceof Constructor)) {
+            throw new TypeError("Cannot call a class as a function");
+        }
+    }
+
+    var _dec, _class;
+
+    var SessionService = exports.SessionService = (_dec = (0, _aureliaFramework.inject)(_restService.RestService, _aureliaEventAggregator.EventAggregator), _dec(_class = function () {
+        function SessionService(restService, eventAggregator) {
+            _classCallCheck(this, SessionService);
+
+            this.authenticated = false;
+            this.user = {};
+
+            this.restService = restService;
+            this.eventAggregator = eventAggregator;
+            this.init();
+        }
+
+        SessionService.prototype.init = function init() {
+            var _this = this;
+
+            this.eventAggregator.subscribe(_environment2.default.authenticationChangedEventName, function (authState) {
+                _this.authenticated = authState.authenticated;
+            });
+            var token = this.getCookie("Authorization");
+            if (token) {
+                console.log("TOKEN FOUND: " + token);
+                this.eventAggregator.publish(_environment2.default.authenticationChangedEventName, {
+                    authenticaed: true,
+                    token: token
+                });
+            }
+        };
+
+        SessionService.prototype.setCookie = function setCookie(cookieName, cookieValue, expirationDays) {
+            var date = new Date();
+            date.setDate(date.getDate() + expirationDays * 24 * 60 * 60 * 1000);
+            var expires = "expires=" + date.toUTCString();
+            document.cookie = cookieName + "=" + cookieValue + ";" + expires + ";path=/";
+        };
+
+        SessionService.prototype.getCookie = function getCookie(cookieName) {
+            var nameEQ = cookieName + "=";
+            var ca = document.cookie.split(';');
+            for (var i = 0; i < ca.length; i++) {
+                var c = ca[i];
+                while (c.charAt(0) == ' ') {
+                    c = c.substring(1, c.length);
+                }if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length, c.length);
+            }
+            return null;
+        };
+
+        SessionService.prototype.login = function login(userCredentials) {
+            var _this2 = this;
+
+            return this.restService.getClient().createRequest(_environment2.default.webApiUserLoginPath).asPost().withContent(userCredentials).send().then(function (success) {
+                console.log("SUCCESSFUL LOGIN");
+                console.log(success);
+                _this2.setCookie("Authorization", success.headers.headers.authorization.value, 1);
+                _this2.eventAggregator.publish(_environment2.default.authenticationChangedEventName, {
+                    authenticated: true,
+                    token: success.headers.headers.authorization.value
+                });
+                _this2.fetchCurrentSessionUser();
+            }, function (failure) {
+                console.log("LOGIN FAILURE");
+                console.log(failure);
+                _this2.eventAggregator.publish(_environment2.default.authenticationChangedEventName, {
+                    authenticated: false
+                });
+            });
+        };
+
+        SessionService.prototype.fetchCurrentSessionUser = function fetchCurrentSessionUser() {
+            var _this3 = this;
+
+            if (this.authenticated) {
+                this.restService.getClient().createRequest(_environment2.default.webApiCurrentUserPath).asGet().send().then(function (success) {
+                    _this3.user = JSON.parse(success.response);
+                }, function (failue) {
+                    _this3.user = null;
+                });
+            }
+        };
+
+        SessionService.prototype.getUser = function getUser() {
+            if (this.authenticated && this.user) {
+                return this.user;
+            } else {
+                return null;
+            }
+        };
+
+        return SessionService;
+    }()) || _class);
+});
+define('layouts/services/user-service',['exports', 'aurelia-http-client', '../environment'], function (exports, _aureliaHttpClient, _environment) {
+    'use strict';
+
+    Object.defineProperty(exports, "__esModule", {
+        value: true
+    });
+    exports.UserService = undefined;
+
+    var _environment2 = _interopRequireDefault(_environment);
+
+    function _interopRequireDefault(obj) {
+        return obj && obj.__esModule ? obj : {
+            default: obj
+        };
+    }
+
+    function _classCallCheck(instance, Constructor) {
+        if (!(instance instanceof Constructor)) {
+            throw new TypeError("Cannot call a class as a function");
+        }
+    }
+
+    var UserService = exports.UserService = function () {
+        function UserService() {
+            _classCallCheck(this, UserService);
+
+            this.restClient = new _aureliaHttpClient.HttpClient();
+        }
+
+        UserService.prototype.getUsers = function (_getUsers) {
+            function getUsers() {
+                return _getUsers.apply(this, arguments);
+            }
+
+            getUsers.toString = function () {
+                return _getUsers.toString();
+            };
+
+            return getUsers;
+        }(function () {
+            return getUsers(0, 10);
+        });
+
+        UserService.prototype.getUsers = function getUsers(pageNumber, pageSize) {
+            return this.restClient.createRequest(_environment2.default.webApiUsersPath).asGet().withBaseUrl(_environment2.default.webApiUrl).withTimeout(5000).send();
+        };
+
+        UserService.prototype.getUser = function getUser(id) {
+            return this.restClient.createRequest(_environment2.default.webApiUsersPath + ('/' + id)).asGet().withBaseUrl(_environment2.default.webApiUrl).withTimeout(2000).send();
+        };
+
+        UserService.prototype.postUser = function postUser(user) {
+            return this.restClient.createRequest(_environment2.default.webApiUsersPath).asPost().withBaseUrl(_environment2.default.webApiUrl).withContent(user).withTimeout(3000).send();
+        };
+
+        return UserService;
+    }();
+});
+define('text!app.html', ['module'], function(module) { module.exports = "<template><require from=\"bootstrap/css/bootstrap.css\"></require><require from=\"./layouts/main/nav-bar\"></require><nav-bar></nav-bar><router-view class=\"container\"></router-view></template>"; });
 define('text!layouts/frame-admin-panel-layout.html', ['module'], function(module) { module.exports = "<template><require from=\"../components/frame/frame-list\"></require><frame-list></frame-list><div class=\"row\"><div class=\"col-md-4 col-md-offset-4\"><div class=\"panel panel-default\"><div class=\"panel-heading\">Crear Marco</div><div class=\"panel-body\"><require from=\"../components/frame/frame-upload-form\"></require><frame-upload-form></frame-upload-form></div></div></div></div></template>"; });
 define('text!layouts/main/login-modal.html', ['module'], function(module) { module.exports = "<template><div class=\"modal fade\" id=\"userLoginModal\" tabindex=\"-1\" role=\"dialog\" aria-labelledby=\"userLoginModal\"><div class=\"modal-dialog\" role=\"document\"><div class=\"modal-content\"><div class=\"modal-header\"><button type=\"button\" class=\"close\" data-dismiss=\"modal\" aria-label=\"Close\"><span aria-hidden=\"true\">&times;</span></button><h4 class=\"modal-title\" id=\"myModalLabel\">Iniciar sesion</h4></div><div class=\"modal-body\"><require from=\"../../components/user/user-login\"></require><div class=\"row\"><div class=\"col-md-12\"><user-login></user-login></div></div></div><div class=\"modal-footer\"></div></div></div></div></template>"; });
-define('text!layouts/main/nav-bar.html', ['module'], function(module) { module.exports = "<template><nav class=\"navbar navbar-default\"><div class=\"container-fluid\"><div class=\"navbar-header\"><button type=\"button\" class=\"navbar-toggle collapsed\" data-toggle=\"collapse\" data-target=\"#bs-example-navbar-collapse-1\" aria-expanded=\"false\"><span class=\"sr-only\">Toggle navigation</span> <span class=\"icon-bar\"></span> <span class=\"icon-bar\"></span> <span class=\"icon-bar\"></span></button> <a class=\"navbar-brand\" href=\"#\">WeFrame</a></div><div class=\"collapse navbar-collapse\" id=\"bs-example-navbar-collapse-1\"><ul class=\"nav navbar-nav\"><li class=\"active\"><a href=\"#\">Link <span class=\"sr-only\">(current)</span></a></li><li><a href=\"#\">Link</a></li><li class=\"dropdown\"><a href=\"#\" class=\"dropdown-toggle\" data-toggle=\"dropdown\" role=\"button\" aria-haspopup=\"true\" aria-expanded=\"false\">Admin <span class=\"caret\"></span></a><ul class=\"dropdown-menu\"><li><a route-href=\"route: index\">Galeria de marcos</a></li><li><a route-href=\"route: frame-admin-list\">Lista de marcos</a></li><li><a route-href=\"route: frame-admin\">Marcos</a></li><li role=\"separator\" class=\"divider\"></li><li><a route-href=\"route: user-admin-list\">Lista de usuarios</a></li></ul></li></ul><ul class=\"nav navbar-nav navbar-right\"><li><button type=\"button\" class=\"btn btn-primary navbar-btn\" data-toggle=\"modal\" data-target=\"#userLoginModal\">Ingresar</button></li><li><p class=\"navbar-text\"></p></li><li><button type=\"button\" class=\"btn btn-success navbar-btn\" data-toggle=\"modal\" data-target=\"#userRegistrationModal\">Registrarse</button></li></ul></div></div></nav><require from=\"./login-modal\"></require><login-modal></login-modal><require from=\"./registration-modal\"></require><registration-modal></registration-modal></template>"; });
+define('text!layouts/main/nav-bar.html', ['module'], function(module) { module.exports = "<template><nav class=\"navbar navbar-default\"><div class=\"container-fluid\"><div class=\"navbar-header\"><button type=\"button\" class=\"navbar-toggle collapsed\" data-toggle=\"collapse\" data-target=\"#bs-example-navbar-collapse-1\" aria-expanded=\"false\"><span class=\"sr-only\">Toggle navigation</span> <span class=\"icon-bar\"></span> <span class=\"icon-bar\"></span> <span class=\"icon-bar\"></span></button> <a class=\"navbar-brand\" href=\"#\">WeFrame</a></div><div class=\"collapse navbar-collapse\" id=\"bs-example-navbar-collapse-1\"><ul class=\"nav navbar-nav\"><li class=\"active\"><a href=\"#\">Link <span class=\"sr-only\">(current)</span></a></li><li><a href=\"#\">Link</a></li><li class=\"dropdown\"><a href=\"#\" class=\"dropdown-toggle\" data-toggle=\"dropdown\" role=\"button\" aria-haspopup=\"true\" aria-expanded=\"false\">Admin <span class=\"caret\"></span></a><ul class=\"dropdown-menu\"><li><a route-href=\"route: index\">Galeria de marcos</a></li><li><a route-href=\"route: frame-admin-list\">Lista de marcos</a></li><li><a route-href=\"route: frame-admin\">Marcos</a></li><li role=\"separator\" class=\"divider\"></li><li><a route-href=\"route: user-admin-list\">Lista de usuarios</a></li></ul></li></ul><ul class=\"nav navbar-nav navbar-right\" if.bind=\"!authenticated\"><li><button type=\"button\" class=\"btn btn-primary navbar-btn\" data-toggle=\"modal\" data-target=\"#userLoginModal\">Ingresar</button></li><li><p class=\"navbar-text\"></p></li><li><button type=\"button\" class=\"btn btn-success navbar-btn\" data-toggle=\"modal\" data-target=\"#userRegistrationModal\">Registrarse</button></li></ul><ul class=\"nav navbar-nav navbar-right\" if.bind=\"authenticated\"><li><p class=\"navbar-text\">Hola ${user.firstName}</p></li><li><p class=\"navbar-text\"></p></li><li><button type=\"button\" class=\"btn btn-warning navbar-btn\" click.trigger=\"logout()\">Cerrar sesion</button></li></ul></div></div></nav><require from=\"./login-modal\"></require><login-modal></login-modal><require from=\"./registration-modal\"></require><registration-modal></registration-modal></template>"; });
 define('text!layouts/main/registration-modal.html', ['module'], function(module) { module.exports = "<template><div class=\"modal fade\" id=\"userRegistrationModal\" tabindex=\"-1\" role=\"dialog\" aria-labelledby=\"userRegistrationModal\"><div class=\"modal-dialog\" role=\"document\"><div class=\"modal-content\"><div class=\"modal-header\"><button type=\"button\" class=\"close\" data-dismiss=\"modal\" aria-label=\"Close\"><span aria-hidden=\"true\">&times;</span></button><h4 class=\"modal-title\" id=\"myModalLabel\">Registrarse</h4></div><div class=\"modal-body\"><require from=\"../../components/user/user-registration\"></require><div class=\"row\"><div class=\"col-md-12\"><user-registration></user-registration></div></div></div><div class=\"modal-footer\"></div></div></div></div></template>"; });
 define('text!components/frame/frame-detail-modal.html', ['module'], function(module) { module.exports = "<template><div class=\"modal fade bs-example-modal-lg\" id=\"frameDetailModal\" tabindex=\"-1\" role=\"dialog\" aria-labelledby=\"frameDetailModal\"><div class=\"modal-dialog modal-lg\" role=\"document\"><div class=\"modal-content\"><div class=\"modal-header\"><button type=\"button\" class=\"close\" data-dismiss=\"modal\" aria-label=\"Close\"><span aria-hidden=\"true\">&times;</span></button><h4 class=\"modal-title\" id=\"myModalLabel\">Detalles - ${frame.uniqueName}</h4></div><div class=\"modal-body\"><div class=\"row\"><div class=\"col-md-12\"><img src=\"${frame.picture.imageUrl}\" class=\"col-md-12\"></div></div><hr><div class=\"row\"><div class=\"col-md-6\"><require from=\"./frame-update-data-form\"></require><frame-update-data-form frame.bind=\"frame\"></frame-update-data-form></div></div></div><div class=\"modal-footer\"></div></div></div></div></template>"; });
 define('text!components/frame/frame-gallery.html', ['module'], function(module) { module.exports = "<template><require from=\"./frame-thumbnail\"></require><div class=\"row\"><div class=\"alert alert-danger\" if.bind=\"error.description\"><strong>${error.title}</strong> ${error.description}</div></div><div repeat.for=\"row of frameRows\"><div class=\"row\"><div repeat.for=\"column of framesPerRow\"><div class=\"col-md-${12/framesPerRow}\"><frame-thumbnail frame.bind=\"frames[$parent.index * framesPerRow + $index]\"></frame-thumbnail></div></div></div></div>\\</template>"; });
@@ -6290,6 +6702,6 @@ define('text!components/picture/canvas-test.html', ['module'], function(module) 
 define('text!components/picture/picture-test.html', ['module'], function(module) { module.exports = "<template><button type=\"button\" click.delegate=\"test()\">Test</button><div id=\"myCanvas\" style=\"background:gray;width:960px;height:540px\"><img src=\"${pictureUrl}\" if.bind=\"isLoaded\" id=\"dragTest\"></div></template>"; });
 define('text!components/picture/picture-upload.html', ['module'], function(module) { module.exports = "<template><form submit.delegate=\"doUpload()\"><input id=\"files\" type=\"file\" accept=\".jpg,.jpeg,.png\" files.bind=\"selectedFiles\" class=\"form-control\"> <input type=\"submit\" class=\"btn btn-primary\" value=\"Upload\" if.bind=\"selectedFiles.length > 0\"></form></template>"; });
 define('text!components/user/user-list.html', ['module'], function(module) { module.exports = "<template><div class=\"row\"><div class=\"col-md-8 col-md-offset-2\"><div class=\"alert alert-danger\" if.bind=\"error.description\"><strong>${error.title}</strong> ${error.description}</div></div></div><div class=\"row\"><div class=\"col-md-10 col-md-offset-1\"><table class=\"table table-bordered\" if.bind=\"users\"><tr><th>ID</th><th>Nombre</th><th>Apellido</th><th>Email</th><th>Rol</th><th>Estado</th></tr><tr repeat.for=\"user of users\"><td>${user.id}</td><td>${user.firstName}</td><td>${user.lastName}</td><td>${user.email}</td><td>${user.role.name}</td><td>${user.state.name}</td></tr></table></div></div></template>"; });
-define('text!components/user/user-login.html', ['module'], function(module) { module.exports = "<template><form role=\"form\" submit.delegate=\"login()\"><div class=\"form-group\"><label for=\"email\">Email:</label><input type=\"email\" class=\"form-control\" value.bind=\"email & validate\" placeholder=\"ej: juan.perez@email.com\"></div><div class=\"form-group\"><label for=\"password\">Contraseña:</label><input type=\"password\" class=\"form-control\" value.bind=\"password & validate\"></div><div class=\"form-group\"><div class=\"alert alert-warning\" repeat.for=\"error of validationController.errors\">${error.message}</div><div class=\"alert alert-danger\" if.bind=\"serverError.title\"><strong>${serverError.title}</strong> ${serverError.description}</div><div class=\"alert alert-success\" if.bind=\"success\"><strong>Exito!</strong> El usuario fue registrado correctamente.</div></div><button type=\"submit\" class=\"btn btn-primary btn-lg btn-block\" if.bind=\"!isWorking\">Ingresar</button> <button type=\"submit\" class=\"btn btn-primary btn-lg btn-block disabled\" if.bind=\"isWorking\"><i class=\"fa fa-spinner fa-spin\"></i> Ingresando...</button></form></template>"; });
+define('text!components/user/user-login.html', ['module'], function(module) { module.exports = "<template><form role=\"form\" submit.delegate=\"login()\"><div class=\"form-group\"><label for=\"email\">Email:</label><input type=\"email\" class=\"form-control\" value.bind=\"email & validate\" placeholder=\"ej: juan.perez@email.com\" disabled.bind=\"isWorking\"></div><div class=\"form-group\"><label for=\"password\">Contraseña:</label><input type=\"password\" class=\"form-control\" value.bind=\"password & validate\" disabled.bind=\"isWorking\"></div><div class=\"form-group\"><div class=\"alert alert-warning\" repeat.for=\"error of validationController.errors\">${error.message}</div><div class=\"alert alert-danger\" if.bind=\"serverError.title\"><strong>${serverError.title}</strong> ${serverError.description}</div><div class=\"alert alert-success\" if.bind=\"success\"><strong>Exito!</strong> Ingreso exitoso.</div></div><button type=\"submit\" class=\"btn btn-primary btn-lg btn-block\" disabled.bind=\"isWorking\"><span if.bind=\"!isWorking\">Ingresar</span> <span if.bind=\"isWorking\">Cargando <i class=\"fa fa-spinner fa-pulse fa-fw\" aria-hidden=\"true\"></i></span></button></form></template>"; });
 define('text!components/user/user-registration.html', ['module'], function(module) { module.exports = "<template><form role=\"form\" submit.delegate=\"register()\"><div class=\"form-group\"><label for=\"firstName\">Nombre:</label><input type=\"text\" class=\"form-control\" value.bind=\"firstName & validate\" placeholder=\"ej: Juan\"></div><div class=\"form-group\"><label for=\"lastName\">Apellido:</label><input type=\"text\" class=\"form-control\" value.bind=\"lastName & validate\" placeholder=\"ej: Perez\"></div><div class=\"form-group\"><label for=\"email\">Email:</label><input type=\"email\" class=\"form-control\" value.bind=\"email & validate\" placeholder=\"ej: juan.perez@email.com\"></div><div class=\"form-group\"><label for=\"password\">Contraseña:</label><input type=\"password\" class=\"form-control\" value.bind=\"password & validate\"></div><div class=\"form-group\"><div class=\"alert alert-warning\" repeat.for=\"error of validationController.errors\">${error.message}</div><div class=\"alert alert-danger\" if.bind=\"serverError.title\"><strong>${serverError.title}</strong> ${serverError.description}</div><div class=\"alert alert-success\" if.bind=\"success\"><strong>Exito!</strong> El usuario fue registrado correctamente.</div></div><button type=\"submit\" class=\"btn btn-success btn-lg btn-block\" if.bind=\"!isWorking\">Registrarse</button> <button type=\"submit\" class=\"btn btn-success btn-lg btn-block disabled\" if.bind=\"isWorking\"><i class=\"fa fa-spinner fa-spin\"></i> Enviando...</button></form></template>"; });
 //# sourceMappingURL=app-bundle.js.map

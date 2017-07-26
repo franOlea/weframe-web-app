@@ -5,26 +5,18 @@ import environment from '../environment';
 
 @inject(RestService, EventAggregator)
 export class SessionService {
-    authenticated = false;
-    user = {};
-
+    
     constructor(restService, eventAggregator) {
         this.restService = restService;
         this.eventAggregator = eventAggregator;
-		this.init();
     }
 
     init() {
-        this.eventAggregator.subscribe(environment.authenticationChangedEventName, authState => {
-			this.authenticated = authState.authenticated;
-		});
         var token = this.getCookie("Authorization");
         if(token) {
             console.log("TOKEN FOUND: "+token);
-            this.eventAggregator.publish(environment.authenticationChangedEventName, {
-                authenticaed: true,
-                token: token
-            });
+            this.publishSessionChanged(true, token);
+            this.fetchCurrentSessionUser();
         }
     }
 
@@ -47,58 +39,79 @@ export class SessionService {
     }
 
     login(userCredentials) {
-        return this.restService.getClient()
+        var _self = this;
+        var promise = new Promise(function(resolve, reject) {
+            _self.restService.getClient()
                 .createRequest(environment.webApiUserLoginPath)
-                .asPost()
-                .withContent(userCredentials)
-                .send()
-                .then(
+                .asPost().withContent(userCredentials)
+                .send().then(
                     success => {
-                        console.log("SUCCESSFUL LOGIN");
-                        console.log(success);
-                        this.setCookie(
-                            "Authorization", 
-                            success.headers.headers.authorization.value,
-                            1
-                        );
-                        this.eventAggregator.publish(environment.authenticationChangedEventName, {
-                            authenticated: true,
-                            token: success.headers.headers.authorization.value
-                        });
-                        this.fetchCurrentSessionUser();
+                        var token = success.headers.headers.authorization.value;
+                        _self.saveAuthorizationCookie(token, 1);
+                        _self.publishSessionChanged(true, token);
+                        _self.fetchCurrentSessionUser();
+                        resolve(true);
                     },
                     failure => {
-                        console.log("LOGIN FAILURE");
-                        console.log(failure);
-                        this.eventAggregator.publish(environment.authenticationChangedEventName, {
-                            authenticated: false
-                        });
+                        _self.publishSessionChanged(false);
+                        resolve(false);
                     }
                 );
+        });
+        return promise;
+    }
+
+    logout() {
+        console.log("logout pressed");
+        this.eventAggregator.publish(environment.authenticationChangedEventName, {
+            authenticaed: false,
+            token: null
+        });
+        this.saveAuthorizationCookie(null);
+    }
+
+    saveAuthorizationCookie(token, expirationDays = -1) {
+        this.setCookie(
+            "Authorization", 
+            token,
+            expirationDays
+        );
+    }
+
+    publishSessionChanged(authenticated, token = null) {
+        this.eventAggregator.publish(environment.authenticationChangedEventName, {
+            authenticated: authenticated,
+            token: token
+        });
+    }
+
+    publishUserChanged(user) {
+        this.eventAggregator.publish(
+            environment.currentUserRetrievedEventName, 
+            user
+        );
     }
 
     fetchCurrentSessionUser() {
-        if(this.authenticated) {
-            this.restService.getClient()
-                    .createRequest(environment.webApiCurrentUserPath)
-                    .asGet()
-                    .send()
-                    .then(
-                        success => {
-                            this.user = JSON.parse(success.response);
-                        },
-                        failue => {
-                            this.user = null;
+        this.restService.getClient()
+                .createRequest(environment.webApiCurrentUserPath)
+                .asGet()
+                .send()
+                .then(
+                    success => {
+                        if(success.statusCode == 200) {
+                            var user = JSON.parse(success.response);
+                            this.publishUserChanged(user);
+                        } else {
+                            this.publishUserChanged(null);
+                            this.publishSessionChanged(false);
                         }
-                    )
-        }
-    }
-
-    getUser() {
-        if(this.authenticated && this.user) { 
-            return this.user;
-        } else {
-            return null;
-        }
+                    },
+                    failue => {
+                        this.publishUserChanged(null);
+                        this.publishSessionChanged(false);
+                        this.saveAuthorizationCookie(null);
+                    }
+                );
     }
 }
