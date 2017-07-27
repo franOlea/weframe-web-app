@@ -1,0 +1,70 @@
+<template>
+    <div class="row" if.bind="error">
+        <div class="col-md-8 col-md-offset-2">
+            <div class="alert alert-danger">
+                <strong>${error.title}</strong> ${error.description}
+            </div>
+        </div>
+    </div>
+    <div class="row" if.bind="users">
+        <div class="col-md-8 col-md-offset-2">
+            <table class="table table-bordered table-hover table-condensed">
+                <tr>
+                    <th>ID</th>
+                    <th>Nombre</th>
+                    <th>Apellido</th>
+                    <th>Email</th>
+                    <th>Rol</th>
+                    <th>Estado</th>
+                    <th colspan="2">Acciones</th>
+                </tr>
+                <tr repeat.for="user of users">
+                    <td style="vertical-align: middle;">${user.id}</td>
+                    <td style="vertical-align: middle;">${user.firstName}</td>
+                    <td style="vertical-align: middle;">${user.lastName}</td>
+                    <td style="vertical-align: middle;">${user.email}</td>
+                    <td style="vertical-align: middle;">${user.role.name}</td>
+                    <td style="vertical-align: middle;">${user.state.name}</td>
+                    <td style="vertical-align: middle;" align="center">
+                        <button type="button" 
+                                class="btn btn-primary" 
+                                data-toggle="modal" 
+                                data-target="#userDetailModal" 
+                                click.delegate="showDetails(user.id)">
+                            <i class="fa fa-info fa-lg" 
+                               aria-hidden="true" 
+                               title="Ver detalles del usuario"></i>
+                               Ver detalles
+                        </button>
+                    </td>
+                    <td style="vertical-align: middle;" align="center">
+                        <button type="button" 
+                                class="btn btn-success"
+                                click.delegate="enableUser(user.id)"
+                                if.bind="user.state.name == 'INACTIVE'">
+                                Habilitar
+                        </button>
+                        <button type="button" 
+                                class="btn btn-danger"
+                                click.delegate="enableUser(user.id)"
+                                if.bind="user.state.name != 'INACTIVE'">
+                                Deshabilitar
+                        </button>
+                    </td>
+                </tr>
+            </table>
+            <ul class="pager">
+                <li class="previous ${currentPage < 1 ? 'disabled' : ''}">
+                    <a href="#" click.delegate="loadPage(currentPage - 1)">
+                        <span aria-hidden="true">&larr;</span> Anterior
+                    </a>
+                </li>
+                <li class="next">
+                    <a href="#" click.delegate="loadPage(currentPage + 1)">
+                        Siguiente <span aria-hidden="true">&rarr;</span>
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</template>

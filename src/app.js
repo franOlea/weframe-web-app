@@ -13,8 +13,8 @@ export class App {
 		config.map([
 			{
 				route: ['', '/'],
-				moduleId: './components/frame/frame-gallery',
-				title: 'Marcos',
+				moduleId: './user/admin/user-list',
+				title: 'Usuarios',
 				name: 'index'
 			},
 			{
