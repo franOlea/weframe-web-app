@@ -54,7 +54,7 @@
                 </tr>
             </table>
             <ul class="pager">
-                <li class="previous ${currentPage < 1 ? 'disabled' : ''}">
+                <li class="previous" if.bind="currentPage > 0">
                     <a href="#" click.delegate="loadPage(currentPage - 1)">
                         <span aria-hidden="true">&larr;</span> Anterior
                     </a>
