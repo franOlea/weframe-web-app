@@ -187,10 +187,29 @@ define('user/user-service',['exports', 'aurelia-framework', '../services/rest-se
                         resolve({});
                     }
                 }, function (failure) {
-                    console.log("[UserService] User page request FAILED");
+                    console.log("[UserService] User request FAILED");
                     reject();
                 });
             });
+        };
+
+        UserService.prototype.getUsersCount = function getUsersCount() {
+            console.log("[UserService] Getting users count");
+            var _self = this;
+            var promise = new Promise(function (resolve, reject) {
+                _self.restService.getClient().createRequest(_environment2.default.webApiUsersPath + '/count').asGet().withTimeout(3000).send().then(function (success) {
+                    console.log("[UserService] Users count response status " + success.statusCode);
+                    if (success.statusCode == 200) {
+                        resolve(success.response);
+                    } else {
+                        resolve({});
+                    }
+                }, function (failure) {
+                    console.log("[UserService] User count request FAILED");
+                    reject();
+                });
+            });
+            return promise;
         };
 
         UserService.prototype.getCurrentUser = function getCurrentUser() {
@@ -6466,7 +6485,10 @@ define('user/admin/user-list',['exports', 'aurelia-framework', '../user-service'
         function UserList(userService) {
             _classCallCheck(this, UserList);
 
+            this.pageSize = 10;
             this.currentPage = 0;
+            this.hasPreviousPage = false;
+            this.hasNextPage = true;
 
             this.userService = userService;
         }
@@ -6479,19 +6501,38 @@ define('user/admin/user-list',['exports', 'aurelia-framework', '../user-service'
             var _this = this;
 
             var page = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 0;
-            var size = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 10;
 
             this.working = true;
-            this.userService.getUsers(page, size).then(function (users) {
-                _this.users = users;
-                _this.currentPage = page;
-            }, function (failure) {
-                console.log(failure);
-                _this.error = {};
-                _this.error.title = 'Ups';
-                _this.error.description = 'Parece que el sistema no response, por favor intenta nuevamente mas tarde.';
-                _this.working = false;
+            this.userService.getUsersCount().then(function (count) {
+                _this.doLoadPage(page, count);
+            }, function (failue) {
+                _this.fail(failure);
             });
+        };
+
+        UserList.prototype.doLoadPage = function doLoadPage() {
+            var _this2 = this;
+
+            var page = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 0;
+            var count = arguments[1];
+
+            this.userService.getUsers(page, this.pageSize).then(function (users) {
+                _this2.users = users;
+                _this2.hasNextPage = count > (page + 1) * _this2.pageSize;
+                _this2.hasPreviousPage = page > 0;
+                _this2.currentPage = page;
+            }, function (failure) {
+                _this2.fail(failure);
+            }).then(function () {
+                return _this2.working = true;
+            });
+        };
+
+        UserList.prototype.fail = function fail(failure) {
+            console.log(failure);
+            this.error = {};
+            this.error.title = 'Ups';
+            this.error.description = 'Parece que el sistema no response, por favor intenta nuevamente mas tarde.';
         };
 
         return UserList;
@@ -6515,5 +6556,5 @@ define('text!components/user/user-registration.html', ['module'], function(modul
 define('text!layouts/main/login-modal.html', ['module'], function(module) { module.exports = "<template><div class=\"modal fade\" id=\"userLoginModal\" tabindex=\"-1\" role=\"dialog\" aria-labelledby=\"userLoginModal\"><div class=\"modal-dialog\" role=\"document\"><div class=\"modal-content\"><div class=\"modal-header\"><button type=\"button\" class=\"close\" data-dismiss=\"modal\" aria-label=\"Close\"><span aria-hidden=\"true\">&times;</span></button><h4 class=\"modal-title\" id=\"myModalLabel\">Iniciar sesion</h4></div><div class=\"modal-body\"><require from=\"../../components/user/user-login\"></require><div class=\"row\"><div class=\"col-md-12\"><user-login></user-login></div></div></div><div class=\"modal-footer\"></div></div></div></div></template>"; });
 define('text!layouts/main/nav-bar.html', ['module'], function(module) { module.exports = "<template><nav class=\"navbar navbar-default\"><div class=\"container-fluid\"><div class=\"navbar-header\"><button type=\"button\" class=\"navbar-toggle collapsed\" data-toggle=\"collapse\" data-target=\"#bs-example-navbar-collapse-1\" aria-expanded=\"false\"><span class=\"sr-only\">Toggle navigation</span> <span class=\"icon-bar\"></span> <span class=\"icon-bar\"></span> <span class=\"icon-bar\"></span></button> <a class=\"navbar-brand\" href=\"#\">WeFrame</a></div><div class=\"collapse navbar-collapse\" id=\"bs-example-navbar-collapse-1\"><ul class=\"nav navbar-nav\"><li class=\"active\"><a href=\"#\">Link <span class=\"sr-only\">(current)</span></a></li><li><a href=\"#\">Link</a></li><li class=\"dropdown\"><a href=\"#\" class=\"dropdown-toggle\" data-toggle=\"dropdown\" role=\"button\" aria-haspopup=\"true\" aria-expanded=\"false\">Admin <span class=\"caret\"></span></a><ul class=\"dropdown-menu\"><li><a route-href=\"route: index\">Galeria de marcos</a></li><li><a route-href=\"route: frame-admin-list\">Lista de marcos</a></li><li><a route-href=\"route: frame-admin\">Marcos</a></li><li role=\"separator\" class=\"divider\"></li><li><a route-href=\"route: user-admin-list\">Lista de usuarios</a></li></ul></li></ul><ul class=\"nav navbar-nav navbar-right\" if.bind=\"!authenticated\"><li><button type=\"button\" class=\"btn btn-primary navbar-btn\" data-toggle=\"modal\" data-target=\"#userLoginModal\">Ingresar</button></li><li><p class=\"navbar-text\"></p></li><li><button type=\"button\" class=\"btn btn-success navbar-btn\" data-toggle=\"modal\" data-target=\"#userRegistrationModal\">Registrarse</button></li></ul><ul class=\"nav navbar-nav navbar-right\" if.bind=\"authenticated\"><li><p class=\"navbar-text\">Hola ${user.firstName}</p></li><li><p class=\"navbar-text\"></p></li><li><button type=\"button\" class=\"btn btn-warning navbar-btn\" click.trigger=\"logout()\">Cerrar sesion</button></li></ul></div></div></nav><require from=\"./login-modal\"></require><login-modal></login-modal><require from=\"./registration-modal\"></require><registration-modal></registration-modal></template>"; });
 define('text!layouts/main/registration-modal.html', ['module'], function(module) { module.exports = "<template><div class=\"modal fade\" id=\"userRegistrationModal\" tabindex=\"-1\" role=\"dialog\" aria-labelledby=\"userRegistrationModal\"><div class=\"modal-dialog\" role=\"document\"><div class=\"modal-content\"><div class=\"modal-header\"><button type=\"button\" class=\"close\" data-dismiss=\"modal\" aria-label=\"Close\"><span aria-hidden=\"true\">&times;</span></button><h4 class=\"modal-title\" id=\"myModalLabel\">Registrarse</h4></div><div class=\"modal-body\"><require from=\"../../components/user/user-registration\"></require><div class=\"row\"><div class=\"col-md-12\"><user-registration></user-registration></div></div></div><div class=\"modal-footer\"></div></div></div></div></template>"; });
-define('text!user/admin/user-list.html', ['module'], function(module) { module.exports = "<template><div class=\"row\" if.bind=\"error\"><div class=\"col-md-8 col-md-offset-2\"><div class=\"alert alert-danger\"><strong>${error.title}</strong> ${error.description}</div></div></div><div class=\"row\" if.bind=\"users\"><div class=\"col-md-8 col-md-offset-2\"><table class=\"table table-bordered table-hover table-condensed\"><tr><th>ID</th><th>Nombre</th><th>Apellido</th><th>Email</th><th>Rol</th><th>Estado</th><th colspan=\"2\">Acciones</th></tr><tr repeat.for=\"user of users\"><td style=\"vertical-align:middle\">${user.id}</td><td style=\"vertical-align:middle\">${user.firstName}</td><td style=\"vertical-align:middle\">${user.lastName}</td><td style=\"vertical-align:middle\">${user.email}</td><td style=\"vertical-align:middle\">${user.role.name}</td><td style=\"vertical-align:middle\">${user.state.name}</td><td style=\"vertical-align:middle\" align=\"center\"><button type=\"button\" class=\"btn btn-primary\" data-toggle=\"modal\" data-target=\"#userDetailModal\" click.delegate=\"showDetails(user.id)\"><i class=\"fa fa-info fa-lg\" aria-hidden=\"true\" title=\"Ver detalles del usuario\"></i> Ver detalles</button></td><td style=\"vertical-align:middle\" align=\"center\"><button type=\"button\" class=\"btn btn-success\" click.delegate=\"enableUser(user.id)\" if.bind=\"user.state.name == 'INACTIVE'\">Habilitar</button> <button type=\"button\" class=\"btn btn-danger\" click.delegate=\"enableUser(user.id)\" if.bind=\"user.state.name != 'INACTIVE'\">Deshabilitar</button></td></tr></table><ul class=\"pager\"><li class=\"previous\" if.bind=\"currentPage > 0\"><a href=\"#\" click.delegate=\"loadPage(currentPage - 1)\"><span aria-hidden=\"true\">&larr;</span> Anterior</a></li><li class=\"next\"><a href=\"#\" click.delegate=\"loadPage(currentPage + 1)\">Siguiente <span aria-hidden=\"true\">&rarr;</span></a></li></ul></div></div></template>"; });
+define('text!user/admin/user-list.html', ['module'], function(module) { module.exports = "<template><div class=\"row\" if.bind=\"error\"><div class=\"col-md-8 col-md-offset-2\"><div class=\"alert alert-danger\"><strong>${error.title}</strong> ${error.description}</div></div></div><div class=\"row\" if.bind=\"users\"><div class=\"col-md-8 col-md-offset-2\"><table class=\"table table-bordered table-hover table-condensed\"><tr><th>ID</th><th>Nombre</th><th>Apellido</th><th>Email</th><th>Rol</th><th>Estado</th><th colspan=\"2\">Acciones</th></tr><tr repeat.for=\"user of users\"><td style=\"vertical-align:middle\">${user.id}</td><td style=\"vertical-align:middle\">${user.firstName}</td><td style=\"vertical-align:middle\">${user.lastName}</td><td style=\"vertical-align:middle\">${user.email}</td><td style=\"vertical-align:middle\">${user.role.name}</td><td style=\"vertical-align:middle\">${user.state.name}</td><td style=\"vertical-align:middle\" align=\"center\"><button type=\"button\" class=\"btn btn-primary\" data-toggle=\"modal\" data-target=\"#userDetailModal\" click.delegate=\"showDetails(user.id)\"><i class=\"fa fa-info fa-lg\" aria-hidden=\"true\" title=\"Ver detalles del usuario\"></i> Ver detalles</button></td><td style=\"vertical-align:middle\" align=\"center\"><button type=\"button\" class=\"btn btn-success\" click.delegate=\"enableUser(user.id)\" if.bind=\"user.state.name == 'INACTIVE'\">Habilitar</button> <button type=\"button\" class=\"btn btn-danger\" click.delegate=\"enableUser(user.id)\" if.bind=\"user.state.name != 'INACTIVE'\">Deshabilitar</button></td></tr></table><ul class=\"pager\"><li class=\"previous\" if.bind=\"hasPreviousPage\"><a href=\"#\" click.delegate=\"loadPage(currentPage - 1)\"><span aria-hidden=\"true\">&larr;</span> Anterior</a></li><li class=\"next\" if.bind=\"hasNextPage\"><a href=\"#\" click.delegate=\"loadPage(currentPage + 1)\">Siguiente <span aria-hidden=\"true\">&rarr;</span></a></li></ul></div></div></template>"; });
 //# sourceMappingURL=app-bundle.js.map

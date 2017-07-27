@@ -50,11 +50,35 @@ export class UserService {
                         }
                     },
                     failure => {
-                        console.log("[UserService] User page request FAILED");
+                        console.log("[UserService] User request FAILED");
                         reject();
                     }
                 );
         });
+    }
+
+    getUsersCount() {
+        console.log("[UserService] Getting users count");
+        var _self = this;
+        var promise = new Promise(function(resolve, reject) {
+            _self.restService.getClient().createRequest(environment.webApiUsersPath + `/count`)
+                .asGet().withTimeout(3000).send()
+                .then(
+                    success => {
+                        console.log("[UserService] Users count response status " + success.statusCode);
+                        if(success.statusCode == 200) {
+                            resolve(success.response);
+                        } else {
+                            resolve({});
+                        }
+                    },
+                    failure => {
+                        console.log("[UserService] User count request FAILED");
+                        reject();
+                    }
+                );
+        });
+        return promise;
     }
 
     getCurrentUser() {
