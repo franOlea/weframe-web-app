@@ -1,0 +1,17 @@
+<template>
+    <require from="./frame-thumbnail"></require>
+    <div class="row">
+        <div class="alert alert-danger" if.bind="error.description">
+            <strong>${error.title}</strong> ${error.description}
+        </div>
+    </div>
+    <div repeat.for="row of frameRows">
+        <div class="row">
+            <div repeat.for="column of framesPerRow">
+                <div class="col-md-${12/framesPerRow}">
+                    <frame-thumbnail frame.bind="frames[$parent.index * framesPerRow + $index]"></frame-thumbnail>
+                </div>
+            </div>
+        </div>
+    </div>\
+</template>

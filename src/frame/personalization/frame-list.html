@@ -1,0 +1,22 @@
+<template>
+    <div class="row" if.bind="error.description">
+        <div class="alert alert-danger">
+            <strong>${error.title}</strong> ${error.description}
+        </div>
+    </div>
+    <div repeat.for="frame of frames">
+        <hr style="margin-bottom:10px; margin-top:0px;" if.bind="$index > 0"/>
+        <div class="row" style="display: flex; align-items: center;">
+            <div class="col-md-4">
+                <a href="#" class="thumbnail">
+                    <img src="${frame.picture.imageUrl}" style="max-height:20vh;">
+                </a>
+            </div>
+            <div class="col-md-8">
+                <h3>${frame.name} <small>$ ${frame.price}</small></h3>
+                <p>${frame.description}</p>
+                <h3><small>Alto: ${frame.height} cm. Ancho: ${frame.length} cm.</small></h3>
+            </div>
+        </div>
+    </div>
+</template>

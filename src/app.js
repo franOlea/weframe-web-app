@@ -18,6 +18,12 @@ export class App {
 				name: 'index'
 			},
 			{
+				route: 'frame-gallery',
+				moduleId: './frame/gallery/frame-gallery',
+				title: 'Galeria de marcos',
+				name: 'frame-gallery'
+			},
+			{
 				route: 'frame-admin-list',
 				moduleId: './components/frame/frame-list',
 				title: 'Panel de administrador',
@@ -34,6 +40,12 @@ export class App {
 				moduleId: './components/user/user-list',
 				title: 'Panel de administrador',
 				name: 'user-admin-list'
+			},
+			{
+				route: 'frame-canvas',
+				moduleId: './personalization/frame-canvas',
+				title: 'Personalizacion de marcos',
+				name: 'frame-canvas'
 			}
 		]);
 

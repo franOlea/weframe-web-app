@@ -10,5 +10,6 @@ export default {
   webApiCurrentUserPath: 'authentication/me',
   webApiUsersPath: 'users',
   webApiPicturesPath: 'pictures',
-  webApiFramesPath: 'generic-product/frames'
+  webApiFramesPath: 'generic-product/frames',
+  webApiMattypesPath: 'generic-product/mat-types'
 };

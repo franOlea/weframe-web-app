@@ -1,0 +1,14 @@
+<template>
+    <div class="thumbnail ${hasLoaded ? 'show' : 'hidden'}" style="border: 0 none; box-shadow: none;">
+        <img src="${frame.picture.imageUrl}" load.trigger="setHasLoaded()">
+        <div class="caption">
+            <h3>${frame.name}</h3>
+            <p>${frame.description}</p>
+            <p>Alto: ${frame.height} cm.</p>
+            <p>Ancho: ${frame.length} cm.</p>
+            <p>
+                <a href="#" class="btn btn-primary" role="button">$ ${frame.price} - Personalizar</a>
+            </p>
+        </div>
+    </div>
+</template>

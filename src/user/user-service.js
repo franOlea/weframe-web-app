@@ -1,5 +1,5 @@
 import { inject } from 'aurelia-framework';
-import { RestService } from '../services/rest-service';
+import { RestService } from '../rest-service';
 import environment from '../environment';
 
 @inject(RestService)
