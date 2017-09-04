@@ -1,9 +1,13 @@
 import {inject} from 'aurelia-framework';
-import {FrameService} from '../frame-service';
+import { EventAggregator } from 'aurelia-event-aggregator';
+import { FrameService } from '../../frame/frame-service';
+import environment from '../../environment';
 
-@inject(FrameService)
+@inject(FrameService, EventAggregator)
 export class FrameList {
-    constructor(frameService) {
+    
+    constructor(frameService, eventAggregator) {
+        this.eventAggregator = eventAggregator;
         this.frameService = frameService;
         this.frames = [];
         this.isWorking = false;
@@ -29,5 +33,9 @@ export class FrameList {
                 this.isWorking = false;
             }
         );
+    }
+
+    select(frame) {
+        this.eventAggregator.publish(environment.canvasSelectedFrameChanged, frame);
     }
 }

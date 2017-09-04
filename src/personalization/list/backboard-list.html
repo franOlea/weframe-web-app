@@ -4,17 +4,17 @@
             <strong>${error.title}</strong> ${error.description}
         </div>
     </div>
-    <div repeat.for="mattype of mattypes">
+    <div repeat.for="backboard of backboards">
         <hr style="margin-bottom:10px; margin-top:0px;" if.bind="$index > 0"/>
         <div class="row" style="display: flex; align-items: center;">
             <div class="col-md-4">
-                <a href="#" class="thumbnail">
-                    <img src="${mattype.picture.imageUrl}" style="max-height:20vh;">
+                <a href="#" class="thumbnail" click.delegate="select(backboard)">
+                    <img src="${backboard.picture.imageUrl}" style="max-height:20vh;">
                 </a>
             </div>
             <div class="col-md-8">
-                <h3>${mattype.name} <small>$ ${mattype.m2Price} / m2</small></h3>
-                <p>${mattype.description}</p>
+                <h3>${backboard.name} <small>$ ${backboard.m2Price} / m2</small></h3>
+                <p>${backboard.description}</p>
             </div>
         </div>
     </div>

@@ -11,5 +11,9 @@ export default {
   webApiUsersPath: 'users',
   webApiPicturesPath: 'pictures',
   webApiFramesPath: 'generic-product/frames',
-  webApiMattypesPath: 'generic-product/mat-types'
+  webApiMattypesPath: 'generic-product/mat-types',
+  webApiBackboardsPath: 'generic-product/backboards',
+  canvasSelectedFrameChanged: 'canvas-selected-frame-changed',
+  canvasSelectedBackmatChanged: 'canvas-selected-backmat-changed',
+  canvasSelectedBackboardChanged: 'canvas-selected-backboard-changed'
 };

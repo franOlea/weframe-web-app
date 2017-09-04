@@ -1,14 +1,15 @@
 <template>
-    <require from="../frame/personalization/frame-list"></require>
-    <require from="../mattype/personalization/mattype-list"></require>
+    <require from="./list/frame-list"></require>
+    <require from="./list/mattype-list"></require>
+    <require from="./list/backboard-list"></require>
     <div class="row">
-        <div class="col-md-8">
+        <div class="col-md-8" style="padding-right:7px;">
             <div class="panel panel-default">
-                <div class="panel-body">
+                <div class="panel-body" style="height:83vh; padding:10px;">
                 </div>
             </div>
         </div>
-        <div class="col-md-4">
+        <div class="col-md-4" style="padding-left:7px;">
             <div class="panel-group" id="accordion" role="tablist" aria-multiselectable="true">
                 <div class="panel panel-default">
                     <div class="panel-heading" role="tab" id="headingOne">
@@ -29,8 +30,20 @@
                         </h4>
                     </div>
                     <div id="collapseTwo" class="panel-collapse collapse" role="tabpanel" aria-labelledby="headingTwo">
-                        <div class="panel-body">
+                        <div class="panel-body" style="height:50vh; overflow-y:scroll; overflow-x:hidden; padding:10px;">
                             <mattype-list></mattype-list>
+                        </div>
+                    </div>
+                </div>
+                <div class="panel panel-default">
+                    <div class="panel-heading" role="tab" id="headingThree">
+                        <h4 class="panel-title">
+                            <a class="collapsed" role="button" data-toggle="collapse" data-parent="#accordion" href="#collapseThree" aria-expanded="false" aria-controls="collapseThree">Placa trasera</a>
+                        </h4>
+                    </div>
+                    <div id="collapseThree" class="panel-collapse collapse" role="tabpanel" aria-labelledby="headingThree">
+                        <div class="panel-body" style="height:50vh; overflow-y:scroll; overflow-x:hidden; padding:10px;">
+                            <backboard-list></backboard-list>
                         </div>
                     </div>
                 </div>
